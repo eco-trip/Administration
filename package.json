@@ -1,8 +1,8 @@
 {
-	"name": "api",
+	"name": "administration",
 	"version": "0.0.1",
 	"author": "Matteo Brocca, Alan Mancini, Alberto Marfoglia",
-	"description": "Ecotrip Api",
+	"description": "Ecotrip Administration Api",
 	"main": "index.js",
 	"private": true,
 	"scripts": {
