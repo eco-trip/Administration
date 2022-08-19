@@ -78,8 +78,8 @@ $RECYCLE.BIN/
 *.zip
 
 # CUSTOM
-/node_modules
-/coverage
+node_modules
+coverage
 
 deploy/.aws-sam
 deploy/urls.json
