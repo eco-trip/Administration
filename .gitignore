@@ -80,6 +80,7 @@ $RECYCLE.BIN/
 # CUSTOM
 node_modules
 coverage
+db/data
 
 deploy/.aws-sam
 deploy/urls.json

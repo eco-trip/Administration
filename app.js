@@ -19,9 +19,7 @@ const server = createServer(app);
 app.use(
 	cors({
 		credentials: true,
-		origin: [process.env.CP_CORS_ORIGIN, process.env.APP_CORS_ORIGIN, /\.ecotrip\.com$/],
-		allowedHeaders: ['content-type'],
-		exposedHeaders: ['x-total-count', 'x-last-updatedat']
+		origin: [process.env.CP_CORS_ORIGIN, process.env.APP_CORS_ORIGIN]
 	})
 );
 app.use(express.json());
