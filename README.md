@@ -21,3 +21,11 @@ DynamoDB addresses:
 ## Notes
 
 For dynamoose, the NodeJS server must have aws-cli, a custom docker image was created from node16-alpine plus aws-cli installed and configured.
+
+## Connect to EC2
+
+If deploy from your pc you can connect via ssh to EC2 with pem key genereted.
+
+```sh
+ssh -i ***.pem ec2-user@X.X.X.X
+```

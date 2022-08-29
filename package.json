@@ -7,6 +7,7 @@
 	"private": true,
 	"scripts": {
 		"start": "node index.js",
+		"start:remote": "ENV=$(cat /home/ec2-user/env) remote=1 nodemon index.js > app.out.log 2> app.err.log < /dev/null &",
 		"test": "jest --verbose --runInBand",
 		"test:coverage": "jest --coverage --verbose --runInBand --silent",
 		"lint": "eslint . --ext .js",
