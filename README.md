@@ -24,7 +24,7 @@ For dynamoose, the NodeJS server must have aws-cli, a custom docker image was cr
 
 ## Connect to EC2
 
-If deploy from your pc you can connect via ssh to EC2 with pem key genereted.
+If deploy application from your PC, you can connect via ssh to EC2 with pem key genereted.
 
 ```sh
 ssh -i ***.pem ec2-user@X.X.X.X
