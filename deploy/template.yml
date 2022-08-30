@@ -1,10 +1,20 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
+
 Parameters:
   URI:
     Type: String
-    Description: The URI used to name resources [projectName-env-gitUsername-subdomain]
-  env:
+    Description: The URI used to name resources [projectName-env-gitUsername]
+  Url:
+    Type: String
+    Description: The enpoint to connect with the api distribution
+  AcmArn:
+    Type: String
+    Description: The ARN of the ssl certificate genereted on ACM
+  HostedZoneId:
+    Description: Hosted zone Id on route 53
+    Type: String
+  Env:
     Type: String
     Default: dev
     Description: Enter the environment
@@ -12,96 +22,21 @@ Parameters:
       - dev
       - production
       - staging
-  domain:
-    Type: String
-    Description: The domain name of the project
-  AcmArn:
-    Type: String
-    Description: The ARN of the ssl certificate genereted on ACM
-  ApiUrl:
-    Type: String
-    Description: The enpoint to connect with the api distribution
-  ClusterName:
-    Description: >-
-      Name of the cluster as it appears in Atlas. Once the cluster is created,
-      its name cannot be changed.
-    Type: String
-    Default: Cluster-1
-  ClusterRegion:
-    Default: us-east-1
-    Description: The AWS Region where the Atlas DB Cluster will run.
-    Type: String
-    AllowedValues:
-      - us-east-1
-      - us-east-2
-      - ca-central-1
-      - us-west-1
-      - us-west-2
-      - sa-east-1
-      - ap-south-1
-      - ap-east-2
-      - ap-southeast-1
-      - ap-southeast-2
-      - ap-northeast-1
-      - ap-northeast-2
-      - eu-central-1
-      - eu-west-1
-      - eu-north-1
-      - eu-west-1
-      - eu-west-2
-      - eu-west-3
-      - eu-south-1
-      - me-south-1
-      - af-south-1
-  ClusterMongoDBMajorVersion:
-    Description: The version of MongoDB
-    Type: String
-    Default: '5.0'
-    AllowedValues:
-      - '3.6'
-      - '4.0'
-      - '4.2'
-      - '4.4'
-      - '5.0'
-  AwsSecretName:
-    Type: String
-    Description: Name of the secret containing atlas PrivateKey, PubilcKey, OrgId and ProjectId
-  startSeeder:
-    Type: String
-    Default: 'false'
-    Description: 'Boolean value, if true then codedeploy runs seeder'
-  DatabaseName:
-    Description: Name of the DB
-    Type: String
-  HostedZoneId:
-    Description: Hosted zone Id on route 53
-    Type: String
-  DatabaseSrv:
-    Description: Tmp SRV address used to connect to a serverless mongodb atlas InstanceRole
-    Type: String
+
 Mappings:
   Environments:
     dev:
-      RetentionPeriod: 1
-      S3TempDays: 1
       InstanceType: t2.micro
       VpcCIDRBlock: 10.0.0.0/16
       PublicSubnetCIDR: 10.0.0.0/24
-      ClusterInstanceSize: M10
     staging:
-      RetentionPeriod: 1
-      S3TempDays: 7
       InstanceType: t2.micro
       VpcCIDRBlock: 10.1.0.0/16
       PublicSubnetCIDR: 10.1.0.0/24
-      ClusterInstanceSize: M10
     production:
-      RetentionPeriod: 35
-      S3TempDays: 7
       InstanceType: t2.micro
       VpcCIDRBlock: 10.2.0.0/16
       PublicSubnetCIDR: 10.2.0.0/24
-      ClusterInstanceSize: M10
   RegionMap:
     us-east-1:
       HVM64: ami-0ed9277fb7eb570c9
@@ -121,82 +56,10 @@ Mappings:
       HVM64: ami-04dd4500af104442f
     eu-west-2:
       HVM64: ami-0d37e07bd4ff37148
+
 Resources:
-  ApiCachePolicy:
-    Type: 'AWS::CloudFront::CachePolicy'
-    Properties:
-      CachePolicyConfig:
-        DefaultTTL: 0
-        MaxTTL: 0
-        MinTTL: 0
-        Name: !Sub '${URI}-cache-policy'
-        ParametersInCacheKeyAndForwardedToOrigin:
-          CookiesConfig:
-            CookieBehavior: none
-          EnableAcceptEncodingGzip: 'false'
-          HeadersConfig:
-            HeaderBehavior: none
-          QueryStringsConfig:
-            QueryStringBehavior: none
-  ApiDistribution:
-    Type: 'AWS::CloudFront::Distribution'
-    Properties:
-      DistributionConfig:
-        HttpVersion: http2
-        Enabled: 'true'
-        Origins:
-          - DomainName: !GetAtt
-              - ApiEC2
-              - PublicDnsName
-            Id: !Ref ApiEC2
-            CustomOriginConfig:
-              HTTPPort: 80
-              OriginProtocolPolicy: http-only
-        Aliases:
-          - !Ref ApiUrl
-          - 'api.progotan.com'
-        ViewerCertificate:
-          AcmCertificateArn: !Ref AcmArn
-          SslSupportMethod: sni-only
-          MinimumProtocolVersion: TLSv1.2_2021
-        DefaultCacheBehavior:
-          AllowedMethods:
-            - DELETE
-            - GET
-            - HEAD
-            - OPTIONS
-            - PATCH
-            - POST
-            - PUT
-          TargetOriginId: !Ref ApiEC2
-          CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad
-          OriginRequestPolicyId: 216adef6-5c7f-47e4-b989-5492eafa07d3
-          ViewerProtocolPolicy: allow-all
-          Compress: true
-  ApiSecurityGroup:
-    Type: 'AWS::EC2::SecurityGroup'
-    Properties:
-      GroupName: !Sub '${URI}-security-group'
-      GroupDescription: Allow HTTPS access from
-      VpcId: !Ref VPC
-      SecurityGroupIngress:
-        - IpProtocol: tcp
-          FromPort: '443'
-          ToPort: '443'
-          CidrIp: 0.0.0.0/0
-        - IpProtocol: tcp
-          FromPort: '80'
-          ToPort: '80'
-          CidrIp: 0.0.0.0/0
-        - IpProtocol: tcp
-          FromPort: '22'
-          ToPort: '22'
-          CidrIp: 0.0.0.0/0
   ApiEC2:
     Type: 'AWS::EC2::Instance'
-    DependsOn:
-      - AtlasNetworkPeering
-      - AtlasDatabaseUser
     Metadata:
       'AWS::CloudFormation::Init':
         config:
@@ -210,31 +73,10 @@ Resources:
             /home/ec2-user/install:
               source: !Sub 'https://aws-codedeploy-${AWS::Region}.s3.amazonaws.com/latest/install'
               mode: '000755'
-            /home/ec2-user/DBUrl:
-              content: !Ref DatabaseSrv
-            /home/ec2-user/SecretName:
-              content: !Ref AwsSecretName
-            /home/ec2-user/DatabaseName:
-              content: !Ref DatabaseName
             /home/ec2-user/env:
-              content: !Ref env
-            /home/ec2-user/startSeeder:
-              content: !Ref startSeeder
+              content: !Ref Env
             /home/ec2-user/PublicRouteTableId:
               content: !Ref PublicRouteTable
-            /etc/yum.repos.d/mongodb-org-5.0.repo:
-              content: |-
-                [mongodb-org-5.0]
-
-                name=MongoDB Repository
-
-                baseurl=https://repo.mongodb.org/yum/amazon/2/mongodb-org/5.0/x86_64/
-
-                gpgcheck=1
-
-                enabled=1
-
-                gpgkey=https://www.mongodb.org/static/pgp/server-5.0.asc
             /etc/awslogs/awscli.conf:
               content: !Sub |-
                 [plugins]
@@ -283,7 +125,7 @@ Resources:
               content: !Sub |-
                 server {
                     listen 80;
-                    server_name ${ApiUrl};
+                    server_name ${Url};
                     
                     location / {
                         proxy_pass http://127.0.0.1:3000;
@@ -299,14 +141,11 @@ Resources:
               cwd: /home/ec2-user/
             01-cfn-signal:
               command: !Sub '/opt/aws/bin/cfn-signal -e 0 --stack ${AWS::StackName} --resource ApiEC2 --region ${AWS::Region}'
-            02-install-mongo:
-              cwd: /home/ec2-user/
-              command: sudo yum install -y mongodb-org
-            03-start-cloudwatch-agent:
+            02-start-cloudwatch-agent:
               command: mkdir /var/awslogs && mkdir /var/awslogs/state && sudo systemctl start awslogsd
-            04-set-agent-as-service:
+            03-set-agent-as-service:
               command: sudo systemctl enable awslogsd.service
-            05-install-nginx:
+            04-install-nginx:
               command: yes y | sudo amazon-linux-extras install nginx1 && sudo systemctl start nginx
     CreationPolicy:
       ResourceSignal:
@@ -316,7 +155,7 @@ Resources:
       IamInstanceProfile: !Ref InstanceRoleInstanceProfile
       InstanceType: !FindInMap
         - Environments
-        - !Ref env
+        - !Ref Env
         - InstanceType
       ImageId: !FindInMap
         - RegionMap
@@ -347,14 +186,81 @@ Resources:
       Tags:
         - Key: DeploymentTag
           Value: !Sub '${URI}'
-      SubnetId: !Ref PublicSubnet
       SecurityGroupIds:
         - !Ref ApiSecurityGroup
+
+  # ROLE AND POLICIES
+  InstanceRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+              AWS:
+                - !Ref 'AWS::AccountId'
+            Action:
+              - 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy'
+        - 'arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore'
+      Path: /
+  InstanceRolePolicies:
+    Type: 'AWS::IAM::Policy'
+    Properties:
+      PolicyName: !Sub '${URI}-InstanceRolePolicy'
+      PolicyDocument:
+        Statement:
+          - Effect: Allow
+            Action:
+              - dynamodb:BatchGet*
+              - dynamodb:DescribeStream
+              - dynamodb:DescribeTable
+              - dynamodb:Get*
+              - dynamodb:Query
+              - dynamodb:Scan
+              - dynamodb:BatchWrite*
+              - dynamodb:CreateTable
+              - dynamodb:Delete*
+              - dynamodb:Update*
+              - dynamodb:PutItem
+
+              - ses:SendEmail
+              - ses:SendRawEmail
+
+              - s3:PutObject
+              - s3:Get*
+              - s3:DeleteObject
+
+              - autoscaling:Describe*
+              - sts:AssumeRole
+              - logs:Create*
+              - cloudformation:GetTemplate
+              - logs:PutLogEvents
+              - cloudformation:Describe*
+              - ec2:AcceptVpcPeeringConnection
+              - ec2:CreateRoute
+              - ec2:DescribeVpcPeeringConnections
+            Resource: '*'
+      Roles:
+        - !Ref InstanceRole
+  InstanceRoleInstanceProfile:
+    Type: 'AWS::IAM::InstanceProfile'
+    Properties:
+      Path: /
+      Roles:
+        - !Ref InstanceRole
+
+  # LOGS
   LogsAPI:
     Type: 'AWS::Logs::LogGroup'
     Properties:
       LogGroupName: !Sub '${URI}-ec2-logs'
       RetentionInDays: 14
+
+  # CODE DEPLOY
   CodedeployApplicationApi:
     Type: 'AWS::CodeDeploy::Application'
     Properties:
@@ -417,55 +323,26 @@ Resources:
               - 'autoscaling:RecordLifecycleActionHeartbeat'
       Roles:
         - !Ref CodeDeployTrustRole
-  InstanceRole:
-    Type: 'AWS::IAM::Role'
+
+  # VPC AND ROUTE TABLES
+  ApiSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
     Properties:
-      AssumeRolePolicyDocument:
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service:
-                - ec2.amazonaws.com
-              AWS:
-                - !Ref 'AWS::AccountId'
-            Action:
-              - 'sts:AssumeRole'
-      ManagedPolicyArns:
-        - 'arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy'
-        - 'arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore'
-      Path: /
-  InstanceRolePolicies:
-    Type: 'AWS::IAM::Policy'
-    Properties:
-      PolicyName: !Sub '${URI}-InstanceRolePolicy'
-      PolicyDocument:
-        Statement:
-          - Effect: Allow
-            Action:
-              - ses:SendEmail
-              - s3:PutObject
-              - autoscaling:Describe*
-              - sts:AssumeRole
-              - logs:Create*
-              - cloudformation:GetTemplate
-              - ses:SendRawEmail
-              - s3:Get*
-              - s3:DeleteObject
-              - logs:PutLogEvents
-              - cloudformation:Describe*
-              - secretsmanager:GetSecretValue
-              - ec2:AcceptVpcPeeringConnection
-              - ec2:CreateRoute
-              - ec2:DescribeVpcPeeringConnections
-            Resource: '*'
-      Roles:
-        - !Ref InstanceRole
-  InstanceRoleInstanceProfile:
-    Type: 'AWS::IAM::InstanceProfile'
-    Properties:
-      Path: /
-      Roles:
-        - !Ref InstanceRole
+      GroupName: !Sub '${URI}-security-group'
+      GroupDescription: Allow HTTPS access from
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '443'
+          ToPort: '443'
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: '80'
+          ToPort: '80'
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: '22'
+          ToPort: '22'
+          CidrIp: 0.0.0.0/0
   VPC:
     Type: 'AWS::EC2::VPC'
     Properties:
@@ -473,7 +350,7 @@ Resources:
       EnableDnsHostnames: true
       CidrBlock: !FindInMap
         - Environments
-        - !Ref env
+        - !Ref Env
         - VpcCIDRBlock
       Tags:
         - Key: Name
@@ -488,7 +365,7 @@ Resources:
       VpcId: !Ref VPC
       CidrBlock: !FindInMap
         - Environments
-        - !Ref env
+        - !Ref Env
         - PublicSubnetCIDR
       MapPublicIpOnLaunch: true
       Tags:
@@ -521,6 +398,57 @@ Resources:
     Properties:
       RouteTableId: !Ref PublicRouteTable
       SubnetId: !Ref PublicSubnet
+
+  # DISTRIBUTION
+  ApiCachePolicy:
+    Type: 'AWS::CloudFront::CachePolicy'
+    Properties:
+      CachePolicyConfig:
+        DefaultTTL: 0
+        MaxTTL: 0
+        MinTTL: 0
+        Name: !Sub '${URI}-cache-policy'
+        ParametersInCacheKeyAndForwardedToOrigin:
+          CookiesConfig:
+            CookieBehavior: none
+          EnableAcceptEncodingGzip: 'false'
+          HeadersConfig:
+            HeaderBehavior: none
+          QueryStringsConfig:
+            QueryStringBehavior: none
+  ApiDistribution:
+    Type: 'AWS::CloudFront::Distribution'
+    Properties:
+      DistributionConfig:
+        HttpVersion: http2
+        Enabled: 'true'
+        Origins:
+          - DomainName: !GetAtt
+              - ApiEC2
+              - PublicDnsName
+            Id: !Ref ApiEC2
+            CustomOriginConfig:
+              HTTPPort: 80
+              OriginProtocolPolicy: http-only
+        Aliases:
+          - !Ref Url
+        ViewerCertificate:
+          AcmCertificateArn: !Ref AcmArn
+          SslSupportMethod: sni-only
+          MinimumProtocolVersion: TLSv1.2_2021
+        DefaultCacheBehavior:
+          AllowedMethods:
+            - DELETE
+            - GET
+            - HEAD
+            - OPTIONS
+            - PATCH
+            - POST
+            - PUT
+          TargetOriginId: !Ref ApiEC2
+          CachePolicyId: !Ref ApiCachePolicy
+          ViewerProtocolPolicy: allow-all
+          Compress: true
   RecordSetGroup:
     Type: 'AWS::Route53::RecordSetGroup'
     Properties:
@@ -532,64 +460,5 @@ Resources:
               - DomainName
             EvaluateTargetHealth: 'false'
             HostedZoneId: Z2FDTNDATAQYW2
-          Name: !Ref ApiUrl
+          Name: !Ref Url
           Type: A
-  AtlasNetworkPeering:
-    Type: 'MongoDB::Atlas::NetworkPeering'
-    Properties:
-      ProjectId: !Sub '{{resolve:secretsmanager:${AwsSecretName}:SecretString:ProjectId}}'
-      ApiKeys:
-        PublicKey: !Sub '{{resolve:secretsmanager:${AwsSecretName}:SecretString:PublicKey}}'
-        PrivateKey: !Sub '{{resolve:secretsmanager:${AwsSecretName}:SecretString:PrivateKey}}'
-      AccepterRegionName: !Ref ClusterRegion
-      AwsAccountId: !Sub '${AWS::AccountId}'
-      RouteTableCIDRBlock: !FindInMap
-        - Environments
-        - !Ref env
-        - VpcCIDRBlock
-      VpcId: !Ref VPC
-  # AtlasCluster:
-  #   Type: 'MongoDB::Atlas::Cluster'
-  #   Properties:
-  #     ProjectId: !Sub '{{resolve:secretsmanager:${AwsSecretName}:SecretString:ProjectId}}'
-  #     ApiKeys:
-  #       PublicKey: !Sub '{{resolve:secretsmanager:${AwsSecretName}:SecretString:PublicKey}}'
-  #       PrivateKey: !Sub '{{resolve:secretsmanager:${AwsSecretName}:SecretString:PrivateKey}}'
-  #     Name: !Ref ClusterName
-  #     MongoDBMajorVersion: !Ref ClusterMongoDBMajorVersion
-  #     ReplicationFactor: 3
-  #     NumShards: 1
-  #     ProviderSettings:
-  #       ProviderName: AWS
-  #       InstanceSizeName: !FindInMap
-  #         - Environments
-  #         - !Ref env
-  #         - ClusterInstanceSize
-  #       RegionName: !Ref 'AWS::Region'
-  AtlasDatabaseUser:
-    Type: 'MongoDB::Atlas::DatabaseUser'
-    # DependsOn: AtlasCluster
-    Properties:
-      ProjectId: !Sub '{{resolve:secretsmanager:${AwsSecretName}:SecretString:ProjectId}}'
-      ApiKeys:
-        PublicKey: !Sub '{{resolve:secretsmanager:${AwsSecretName}:SecretString:PublicKey}}'
-        PrivateKey: !Sub '{{resolve:secretsmanager:${AwsSecretName}:SecretString:PrivateKey}}'
-      Username: !GetAtt
-        - InstanceRole
-        - Arn
-      DatabaseName: $external
-      AWSIAMType: ROLE
-      Roles:
-        - RoleName: readWrite
-          DatabaseName: !Ref DatabaseName
-Outputs:
-  VpcId:
-    Value: !Ref VPC
-  PublicRouteTableId:
-    Value: !Ref PublicRouteTable
-  DatabaseUser:
-    Value: !GetAtt
-      - InstanceRole
-      - Arn
-  AtlasSrvAddress:
-    Value: !Ref DatabaseSrv

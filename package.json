@@ -7,6 +7,7 @@
 	"private": true,
 	"scripts": {
 		"start": "node index.js",
+		"start:remote": "ENV=$(cat /home/ec2-user/env) remote=1 nodemon index.js > app.out.log 2> app.err.log < /dev/null &",
 		"test": "jest --verbose --runInBand",
 		"test:coverage": "jest --coverage --verbose --runInBand --silent",
 		"lint": "eslint . --ext .js",
@@ -17,14 +18,15 @@
 		"ajv": "^8.11.0",
 		"ajv-errors": "^3.0.0",
 		"ajv-formats": "^2.1.1",
-		"aws-sdk": "^2.1196.0",
 		"cookie-parser": "^1.4.6",
 		"cors": "^2.8.5",
 		"dotenv": "^16.0.1",
+		"dynamoose": "^3.0.2",
 		"express": "^4.18.1",
 		"moment": "^2.29.4",
 		"nodemon": "^2.0.19",
-		"sprintf-js": "^1.1.2"
+		"sprintf-js": "^1.1.2",
+		"uuid": "^8.3.2"
 	},
 	"devDependencies": {
 		"@semantic-release/commit-analyzer": "^9.0.2",
