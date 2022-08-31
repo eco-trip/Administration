@@ -19,7 +19,9 @@ const server = createServer(app);
 app.use(
 	cors({
 		credentials: true,
-		origin: [process.env.CP_CORS_ORIGIN, process.env.APP_CORS_ORIGIN]
+		origin: [process.env.CP_CORS_ORIGIN, process.env.APP_CORS_ORIGIN],
+		allowedHeaders: ['content-type'],
+		exposedHeaders: ['x-total-count', 'x-last-updatedat']
 	})
 );
 app.use(express.json());

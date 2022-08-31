@@ -1,4 +1,3 @@
 cd /home/ec2-user/app
-port=${PORT:=3000}
-lsof -i :$port -t | xargs kill 2>&1
+kill $(ps aux | grep -i app/node_modules/.bin/nodemon | awk '{print $2}')
 npm run start:remote

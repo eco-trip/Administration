@@ -162,25 +162,13 @@ Resources:
         - !Ref 'AWS::Region'
         - HVM64
       UserData: !Base64
-        'Fn::Join':
-          - ''
-          - - |
-              #!/bin/bash
-            - |
-              yum -y update
-            - |
-              yum -y install cfn-bootstrap
-            - |
-              curl -sL https://rpm.nodesource.com/setup_lts.x | bash -
-            - |
-              yum install nodejs -y
-            - /opt/aws/bin/cfn-init -v
-            - ' --stack '
-            - !Ref 'AWS::StackName'
-            - ' --resource ApiEC2'
-            - ' --region '
-            - !Ref 'AWS::Region'
-            - |+
+        'Fn::Sub': |-
+          #!/bin/bash
+          yum -y update
+          yum -y install cfn-bootstrap
+          curl -sL https://rpm.nodesource.com/setup_lts.x | bash -
+          yum install nodejs -y
+          /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource ApiEC2 --region ${AWS::Region}
 
       KeyName: !Sub '${URI}-keys'
       Tags:
@@ -256,6 +244,8 @@ Resources:
   # LOGS
   LogsAPI:
     Type: 'AWS::Logs::LogGroup'
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Retain
     Properties:
       LogGroupName: !Sub '${URI}-ec2-logs'
       RetentionInDays: 14
