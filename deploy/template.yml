@@ -60,6 +60,8 @@ Mappings:
 Resources:
   ApiEC2:
     Type: 'AWS::EC2::Instance'
+    DependsOn:
+      - LogsAPI
     Metadata:
       'AWS::CloudFormation::Init':
         config:
