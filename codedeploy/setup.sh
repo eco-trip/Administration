@@ -19,5 +19,14 @@ echo "APP_CORS_ORIGIN=https://${AppUrl}" >>.env.${ENV}
 echo "CP_URL=${CpUlr}" >>.env.${ENV}
 echo "CP_CORS_ORIGIN=https://${CpUlr}" >>.env.${ENV}
 
+AuthUrl=$(cat urls.json | jq ".auth.${env}" | tr -d '"')
+CognitoDomainUrl=$(aws cognito-idp describe-user-pool-domain --domain ${AuthUrl} --region ${AWS_DEFAULT_REGION} --profile ${AWS_PROFILE} | jq -r '.DomainDescription.Domain')
+CognitoUserPoolID=$(aws cognito-idp describe-user-pool-domain --domain ${AuthUrl} --region ${AWS_DEFAULT_REGION} --profile ${AWS_PROFILE} | jq -r '.DomainDescription.UserPoolId')
+CognitoAppClientID=$(aws cognito-idp list-user-pool-clients --user-pool-id ${CognitoUserPoolID} --region ${AWS_DEFAULT_REGION} --profile ${AWS_PROFILE} | jq -r '.UserPoolClients.ClientId')
+
+echo "AWS_COGNITO_URL=${CognitoDomainUrl}" >>.env.${ENV}
+echo "AWS_COGNITO_USER_POOL_ID=${CognitoUserPoolID}" >>.env.${ENV}
+echo "AWS_COGNITO_CLIENT_ID=${CognitoAppClientID}" >>.env.${ENV}
+
 cp .env.${ENV} .env
 find ./ -maxdepth 1 -name '.env.*' -exec rm {} \;
