@@ -85,4 +85,4 @@ db/data
 deploy/.aws-sam
 deploy/urls.json
 
-.env.development
+.env.dev
