@@ -216,19 +216,20 @@ Resources:
               - dynamodb:Delete*
               - dynamodb:Update*
               - dynamodb:PutItem
-
+              - secretsmanager:GetSecretValue
+              - cognito-idp:DescribeUserPoolClient
+              - cognito-idp:DescribeUserPoolDomain
+              - cognito-idp:ListUserPoolClients
               - ses:SendEmail
               - ses:SendRawEmail
-
               - s3:PutObject
               - s3:Get*
               - s3:DeleteObject
-
               - autoscaling:Describe*
               - sts:AssumeRole
               - logs:Create*
-              - cloudformation:GetTemplate
               - logs:PutLogEvents
+              - cloudformation:GetTemplate
               - cloudformation:Describe*
               - ec2:AcceptVpcPeeringConnection
               - ec2:CreateRoute

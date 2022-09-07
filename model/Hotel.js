@@ -13,4 +13,4 @@ const schema = new dynamoose.Schema(
 	}
 );
 
-module.exports.Hotel = dynamoose.model(`${process.env.project}.${process.env.ENV}.Hotel`, schema);
+module.exports.Hotel = dynamoose.model(`${process.env.Project}.${process.env.ENV}.Hotel`, schema);
