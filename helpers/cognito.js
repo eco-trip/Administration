@@ -1,12 +1,16 @@
 require('cross-fetch/polyfill');
 const AmazonCognitoIdentity = require('amazon-cognito-identity-js');
 
-const poolData = {
-	UserPoolId: process.env.AWS_COGNITO_USER_POOL_ID,
-	ClientId: process.env.AWS_COGNITO_CLIENT_ID
-};
+let userPool;
 
-const userPool = new AmazonCognitoIdentity.CognitoUserPool(poolData);
+if (process.env.ENV !== 'test') {
+	const poolData = {
+		UserPoolId: process.env.AWS_COGNITO_USER_POOL_ID,
+		ClientId: process.env.AWS_COGNITO_CLIENT_ID
+	};
+
+	userPool = new AmazonCognitoIdentity.CognitoUserPool(poolData);
+}
 
 const attribute = (key, value) => ({
 	Name: key,
@@ -19,10 +23,7 @@ const setCognitoAttributeList = attributes =>
 const signUp = (email, password, attributes) =>
 	new Promise((resolve, reject) => {
 		userPool.signUp(email, password, setCognitoAttributeList(attributes), null, (err, result) => {
-			if (err) {
-				console.log(err);
-				return reject(err);
-			}
+			if (err) return reject(err);
 
 			return resolve(result);
 		});
@@ -42,19 +43,16 @@ const signIn = (email, password) =>
 
 		cognitoUser.authenticateUser(authenticationDetails, {
 			onSuccess: result => {
-				const token = {
+				const tokens = {
 					accessToken: result.getAccessToken().getJwtToken(),
-					idToken: result.getIdToken().getJwtToken(),
-					refreshToken: result.getRefreshToken().getToken()
+					accessTokenPayload: result.getAccessToken().payload,
+					accessTokenExp: result.getAccessToken().getExpiration(),
+					refreshToken: result.getRefreshToken().getToken(),
+					refreshTokenExp: process.env.RT_EXPIRES_TIME
 				};
-				console.log('LOGIN OK', token);
-				return resolve(token);
+				return resolve(tokens);
 			},
-
-			onFailure: err => {
-				console.log('LOGIN ERR', err);
-				return reject(err);
-			}
+			onFailure: err => reject(err)
 		});
 	});
 

@@ -23,10 +23,6 @@ module.exports = {
 
 	AdditionalParameters: data => Response('Additional parameters are not permitted', 400, data, 202),
 
-	AlreadyExists: data => Response('The resource already exists', 400, data, 203),
-
-	DuplicatedLevelPill: data => Response('A pill already exists for one of the specified levels', 400, data, 204),
-
 	/* 300 - auth errors */
 
 	WrongEmail: data => Response('Wrong email', 400, data, 300),
@@ -35,8 +31,6 @@ module.exports = {
 
 	InactiveAccount: () => Response('Inactive account', 401, {}, 302),
 
-	DeletedAccount: () => Response('Deleted account', 400, {}, 303),
-
 	EmailAlreadyExists: data => Response('The email already exists', 400, data, 304),
 
 	AuthReset: () => Response('Auth reset, please change password', 401, {}, 305),
@@ -44,10 +38,6 @@ module.exports = {
 	MissingRefreshToken: () => Response('Refresh token does not exist', 401, {}, 306),
 
 	ExpiredRefreshToken: () => Response('Expired refresh token', 401, {}, 307),
-
-	AccountAlreadyExists: () => Response('The account already exists', 400, {}, 350),
-
-	NicknameAlreadyExists: () => Response('The nickname already exists', 400, {}, 351),
 
 	/* 400 - generic client error */
 

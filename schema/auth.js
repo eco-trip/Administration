@@ -7,8 +7,9 @@ module.exports = {
 			password: { type: 'string' },
 			name: { type: 'string' },
 			family_name: { type: 'string' },
-			phone: { type: 'string' },
-			locale: { type: 'string' }
+			phone_number: { type: 'string' },
+			lang: { type: 'string' },
+			role: { type: 'string' }
 		},
 		additionalProperties: false,
 		errorMessage: {
@@ -21,11 +22,6 @@ module.exports = {
 		type: 'object',
 		allOf: [{ $ref: 'auth' }],
 		required: ['email', 'password']
-	},
-	emailAuth: {
-		type: 'object',
-		allOf: [{ $ref: 'auth' }],
-		required: ['email']
 	},
 	registerAuth: {
 		type: 'object',

@@ -11,8 +11,6 @@ router.post('/login', validator('loginAuth'), login);
 
 router.get('/check', isAuth, check);
 
-// router.get('/email/:email?', validator({ params: 'emailAuth' }), checkIfEmailExists);
-
 // router.get('/logout', isAuthRtlogout, logout);
 
 module.exports = router;
