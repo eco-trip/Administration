@@ -2,8 +2,8 @@ const fs = require('fs');
 const path = require('path');
 const dotenv = require('dotenv');
 
-if (process.env.ENV === 'dev' && fs.existsSync(path.resolve(__dirname, '.env.dev'))) {
-	dotenv.config({ path: path.resolve(__dirname, '.env.dev') });
+if (process.env.ENV === 'dev' && fs.existsSync(path.resolve(__dirname, '.env.development'))) {
+	dotenv.config({ path: path.resolve(__dirname, '.env.development') });
 } else {
 	dotenv.config();
 }
