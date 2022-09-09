@@ -21,7 +21,6 @@ CpUlr=$(cat urls.json | jq ".cp.${ENV}" | tr -d '"')
 AuthUrl=$(cat urls.json | jq ".auth.${ENV}" | tr -d '"')
 
 echo "AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION}" >>.env.${ENV}
-echo "Target=${Target}" >>.env.${ENV}
 echo "Project=${Project}" >>.env.${ENV}
 
 echo "APP_URL=${AppUrl}" >>.env.${ENV}
