@@ -12,8 +12,19 @@ if (process.env.ENV !== 'test') {
 }
 
 exports.isAuth = async (req, res, next) => {
-	const token = Object.keys(req.cookies).length && req.cookies.AccessToken;
+	// check http-cookie token
+	let token = Object.keys(req.cookies).length && req.cookies.AccessToken;
+
+	// check header authorization bearer token
+	if (!token) {
+		const bearerHeader = req.headers.authorization;
+		if (bearerHeader) {
+			[, token] = bearerHeader.split(' ');
+		}
+	}
+
 	if (!token) return next(Unauthorized());
+
 	try {
 		const payload = await verifier.verify(token);
 		res.locals.user = payload;

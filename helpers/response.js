@@ -33,12 +33,6 @@ module.exports = {
 
 	EmailAlreadyExists: data => Response('The email already exists', 400, data, 304),
 
-	AuthReset: () => Response('Auth reset, please change password', 401, {}, 305),
-
-	MissingRefreshToken: () => Response('Refresh token does not exist', 401, {}, 306),
-
-	ExpiredRefreshToken: () => Response('Expired refresh token', 401, {}, 307),
-
 	/* 400 - generic client error */
 
 	BadRequest: () => Response('Bad request', 400, {}, 400),

@@ -20,7 +20,7 @@ app.use(
 	cors({
 		credentials: true,
 		origin: [process.env.CP_CORS_ORIGIN, process.env.APP_CORS_ORIGIN],
-		allowedHeaders: ['content-type'],
+		allowedHeaders: ['content-type', 'authorization'],
 		exposedHeaders: ['x-total-count', 'x-last-updatedat']
 	})
 );
