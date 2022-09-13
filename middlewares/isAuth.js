@@ -12,17 +12,10 @@ if (process.env.ENV !== 'test') {
 }
 
 exports.isAuth = async (req, res, next) => {
-	// check http-cookie token
-	let token = Object.keys(req.cookies).length && req.cookies.AccessToken;
+	const index = Object.keys(req.cookies).find(k => k.indexOf('accessToken') !== -1 || k.indexOf('AccessToken') !== -1);
+	if (!index) return next(Unauthorized());
 
-	// check header authorization bearer token
-	if (!token) {
-		const bearerHeader = req.headers.authorization;
-		if (bearerHeader) {
-			[, token] = bearerHeader.split(' ');
-		}
-	}
-
+	const token = req.cookies[index];
 	if (!token) return next(Unauthorized());
 
 	try {
