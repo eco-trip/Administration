@@ -39,5 +39,4 @@ yes | rm ../"${URI}"-keys.pem 2>/dev/null
 sam delete \
 	--stack-name ${URI} \
 	--no-prompts \
-	--region ${AWS_DEFAULT_REGION} \
-	--profile ${AWS_PROFILE}
+	--region ${AWS_DEFAULT_REGION}
