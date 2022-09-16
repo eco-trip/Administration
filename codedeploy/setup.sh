@@ -28,11 +28,9 @@ echo "APP_CORS_ORIGIN=https://${AppUrl}" >>.env.${ENV}
 echo "CP_URL=${CpUlr}" >>.env.${ENV}
 echo "CP_CORS_ORIGIN=https://${CpUlr}" >>.env.${ENV}
 
-CognitoDomainUrl=$(aws cognito-idp describe-user-pool-domain --domain ${AuthUrl} | jq -r '.DomainDescription.Domain')
 CognitoUserPoolID=$(aws cognito-idp describe-user-pool-domain --domain ${AuthUrl} | jq -r '.DomainDescription.UserPoolId')
 CognitoAppClientID=$(aws cognito-idp list-user-pool-clients --user-pool-id ${CognitoUserPoolID} | jq -r '.UserPoolClients[].ClientId')
 
-echo "AWS_COGNITO_URL=${CognitoDomainUrl}" >>.env.${ENV}
 echo "AWS_COGNITO_USER_POOL_ID=${CognitoUserPoolID}" >>.env.${ENV}
 echo "AWS_COGNITO_CLIENT_ID=${CognitoAppClientID}" >>.env.${ENV}
 
