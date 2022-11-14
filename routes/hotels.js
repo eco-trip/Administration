@@ -9,7 +9,7 @@ router.get('/', isAuth, get);
 
 router.get('/:id', validator({ params: 'hotel' }), isAuth, getById);
 
-router.post('/', validator({ params: 'hotel', body: 'addHotel' }), isAuth, add);
+router.post('/', validator({ body: 'addHotel' }), isAuth, add);
 
 router.patch('/:id', validator({ params: 'hotel', body: 'addHotel' }), isAuth, update);
 

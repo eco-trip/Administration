@@ -1,11 +1,11 @@
 const { v1: uuidv1 } = require('uuid');
 
 const { SendData, NotFound, ServerError } = require('../helpers/response');
-const { Hotel } = require('../model/Hotel');
+const { Room } = require('../model/Room');
 
 exports.get = async (req, res, next) => {
 	try {
-		const results = await Hotel.scan().exec();
+		const results = await Room.scan().exec();
 		return next(SendData(results));
 	} catch (error) {
 		return next(ServerError(error));
@@ -14,11 +14,8 @@ exports.get = async (req, res, next) => {
 
 exports.getById = async (req, res, next) => {
 	try {
-		const item = await Hotel.query('pk')
-			.eq('HOTEL#' + req.params.id)
-			.and()
-			.where('sk')
-			.beginsWith('METADATA#')
+		const item = await Room.query('sk')
+			.eq('ROOM#' + req.params.id)
 			.exec();
 		if (!item) return next(NotFound());
 		return next(SendData(item));
@@ -30,7 +27,8 @@ exports.getById = async (req, res, next) => {
 exports.add = async (req, res, next) => {
 	try {
 		const id = uuidv1();
-		const item = await Hotel.create({ pk: 'HOTEL#' + id, sk: 'METADATA#' + id, ...req.body });
+		const { hotelId, number, floor } = req.body;
+		const item = await Room.create({ pk: 'HOTEL#' + hotelId, sk: 'ROOM#' + id, number, floor });
 		return next(SendData(item));
 	} catch (error) {
 		return next(ServerError(error));
@@ -39,9 +37,9 @@ exports.add = async (req, res, next) => {
 
 exports.update = async (req, res, next) => {
 	try {
-		const exist = await Hotel.get('HOTEL#' + req.params.id);
+		const exist = await Room.get(req.params.id);
 		if (!exist) return next(NotFound());
-		const item = await Hotel.update({ id: req.params.id, ...req.body });
+		const item = await Room.update({ id: req.params.id, ...req.body });
 		return next(SendData(item));
 	} catch (error) {
 		return next(ServerError(error));
@@ -50,7 +48,7 @@ exports.update = async (req, res, next) => {
 
 exports.del = async (req, res, next) => {
 	try {
-		const item = await Hotel.get('HOTEL#' + req.params.id);
+		const item = await Room.get(req.params.id);
 		if (!item) return next(NotFound());
 		item.delete();
 		return next(SendData());

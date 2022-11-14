@@ -11,12 +11,12 @@ const schema = new dynamoose.Schema(
 			rangeKey: true,
 			index: { global: true }
 		},
-		name: String,
-		description: String
+		number: String,
+		floor: Number
 	},
 	{
 		timestamps: true
 	}
 );
 
-module.exports.Hotel = dynamoose.model('Hotel', schema);
+module.exports.Room = dynamoose.model('Room', schema);
