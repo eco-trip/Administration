@@ -3,9 +3,14 @@ module.exports = {
 		$id: 'hotel',
 		type: 'object',
 		properties: {
-			id: { type: 'string' },
+			id: { $ref: 'uuid#/definitions/id' },
 			name: { type: 'string' },
-			description: { type: 'string' }
+			description: { type: 'string' },
+			cost: { type: 'number' },
+			country: { type: 'string', minLength: 2, maxLength: 2 },
+			city: { type: 'string' },
+			address: { type: 'string' },
+			zipcode: { type: 'string' }
 		},
 		additionalProperties: false
 	},

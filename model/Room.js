@@ -4,15 +4,17 @@ const schema = new dynamoose.Schema(
 	{
 		pk: {
 			type: String,
-			hashKey: true
+			hashKey: true,
+			required: true
 		},
 		sk: {
 			type: String,
 			rangeKey: true,
-			index: { global: true }
+			index: { global: true, name: 'skIndex' },
+			required: true
 		},
-		number: String,
-		floor: Number
+		number: { type: String, required: true },
+		floor: { type: Number, required: true }
 	},
 	{
 		timestamps: true

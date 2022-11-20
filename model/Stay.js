@@ -13,17 +13,27 @@ const schema = new dynamoose.Schema(
 			index: { global: true, name: 'skIndex' },
 			required: true
 		},
-		name: { type: String, required: true },
-		description: String,
-		cost: Number,
-		country: String,
-		city: String,
-		address: String,
-		zipcode: String
+		startTime: {
+			type: {
+				value: Date,
+				required: true,
+				settings: {
+					storage: 'iso'
+				}
+			}
+		},
+		endTime: {
+			type: {
+				value: Date,
+				settings: {
+					storage: 'iso'
+				}
+			}
+		}
 	},
 	{
 		timestamps: true
 	}
 );
 
-module.exports.Hotel = dynamoose.model('Hotel', schema);
+module.exports.Stay = dynamoose.model('Stay', schema);

@@ -3,8 +3,8 @@ module.exports = {
 		$id: 'room',
 		type: 'object',
 		properties: {
-			id: { type: 'string' },
-			hotelId: { type: 'string' },
+			id: { $ref: 'uuid#/definitions/id' },
+			hotelId: { $ref: 'uuid#/definitions/id' },
 			number: { type: 'string' },
 			floor: { type: 'number' }
 		},
@@ -13,6 +13,6 @@ module.exports = {
 	addRoom: {
 		type: 'object',
 		allOf: [{ $ref: 'room' }],
-		required: ['number', 'floor', 'hotelId']
+		required: ['hotelId', 'number', 'floor']
 	}
 };

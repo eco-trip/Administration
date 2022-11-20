@@ -2,6 +2,7 @@ const dynamoose = require('dynamoose');
 
 const { Hotel } = require('../model/Hotel');
 const { Room } = require('../model/Room');
+const { Stay } = require('../model/Stay');
 
 const ddb = new dynamoose.aws.ddb.DynamoDB({
 	region: process.env.AWS_DEFAULT_REGION,
@@ -13,4 +14,4 @@ dynamoose.Table.defaults.set({
 	prefix: `${process.env.Project}.${process.env.ENV}.`
 });
 
-module.exports.Table = new dynamoose.Table('Tables', [Hotel, Room]);
+module.exports.Table = new dynamoose.Table(process.env.Target, [Hotel, Room, Stay]);

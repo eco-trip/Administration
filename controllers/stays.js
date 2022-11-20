@@ -1,11 +1,11 @@
 const { v1: uuidv1 } = require('uuid');
 
 const { SendData, NotFound, ServerError } = require('../helpers/response');
-const { Hotel } = require('../model/Hotel');
+const { Stay } = require('../model/Stay');
 
 exports.get = async (req, res, next) => {
 	try {
-		const items = await Hotel.scan().filter('sk').beginsWith('METADATA#').exec();
+		const items = await Stay.scan().filter('sk').beginsWith('STAY#').exec();
 		return next(SendData(items));
 	} catch (error) {
 		return next(ServerError(error));
@@ -14,11 +14,8 @@ exports.get = async (req, res, next) => {
 
 exports.getById = async (req, res, next) => {
 	try {
-		const item = await Hotel.query('pk')
-			.eq('HOTEL#' + req.params.id)
-			.and()
-			.where('sk')
-			.beginsWith('METADATA#')
+		const item = await Stay.query('sk')
+			.eq('STAY#' + req.params.id)
 			.limit(1)
 			.exec();
 
@@ -32,7 +29,8 @@ exports.getById = async (req, res, next) => {
 exports.add = async (req, res, next) => {
 	try {
 		const id = uuidv1();
-		const item = await Hotel.create({ pk: 'HOTEL#' + id, sk: 'METADATA#' + id, ...req.body });
+		const { roomId, startTime } = req.body;
+		const item = await Stay.create({ pk: 'ROOM#' + roomId, sk: 'STAY#' + id, startTime: new Date(startTime) });
 		return next(SendData(item));
 	} catch (error) {
 		return next(ServerError(error));
@@ -41,16 +39,13 @@ exports.add = async (req, res, next) => {
 
 exports.update = async (req, res, next) => {
 	try {
-		const item = await Hotel.query('pk')
-			.eq('HOTEL#' + req.params.id)
-			.and()
-			.where('sk')
-			.beginsWith('METADATA#')
+		const item = await Stay.query('sk')
+			.eq('STAY#' + req.params.id)
+			.limit(1)
 			.exec();
+		if (!item.count) return next(NotFound());
 
-		if (!item) return next(NotFound());
-
-		// await Hotel.update({ id: req.params.id, ...req.body }); TODO
+		// await Stay.update({ id: req.params.id, ...req.body }); TODO
 		return next(SendData(item));
 	} catch (error) {
 		return next(ServerError(error));
@@ -59,14 +54,13 @@ exports.update = async (req, res, next) => {
 
 exports.del = async (req, res, next) => {
 	try {
-		const items = await Hotel.query('pk')
-			.eq('HOTEL#' + req.params.id)
+		const item = await Stay.query('sk')
+			.eq('STAY#' + req.params.id)
+			.limit(1)
 			.exec();
+		if (!item.count) return next(NotFound());
 
-		if (!items.count) return next(NotFound());
-
-		await Promise.all(items.map(row => row.delete()));
-
+		await item[0].delete();
 		return next(SendData('Successfully deleted!'));
 	} catch (error) {
 		return next(ServerError(error));

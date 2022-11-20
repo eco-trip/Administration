@@ -5,8 +5,8 @@ const { Room } = require('../model/Room');
 
 exports.get = async (req, res, next) => {
 	try {
-		const results = await Room.scan().exec();
-		return next(SendData(results));
+		const items = await Room.scan().filter('sk').beginsWith('ROOM#').exec();
+		return next(SendData(items));
 	} catch (error) {
 		return next(ServerError(error));
 	}
@@ -16,9 +16,11 @@ exports.getById = async (req, res, next) => {
 	try {
 		const item = await Room.query('sk')
 			.eq('ROOM#' + req.params.id)
+			.limit(1)
 			.exec();
-		if (!item) return next(NotFound());
-		return next(SendData(item));
+
+		if (!item.count) return next(NotFound());
+		return next(SendData(item[0]));
 	} catch (error) {
 		return next(ServerError(error));
 	}
@@ -37,9 +39,14 @@ exports.add = async (req, res, next) => {
 
 exports.update = async (req, res, next) => {
 	try {
-		const exist = await Room.get(req.params.id);
-		if (!exist) return next(NotFound());
-		const item = await Room.update({ id: req.params.id, ...req.body });
+		const item = await Room.query('sk')
+			.eq('ROOM#' + req.params.id)
+			.limit(1)
+			.exec();
+
+		if (!item.count) return next(NotFound());
+
+		// await Room.update({ id: req.params.id, ...req.body }); TODO
 		return next(SendData(item));
 	} catch (error) {
 		return next(ServerError(error));
@@ -48,10 +55,22 @@ exports.update = async (req, res, next) => {
 
 exports.del = async (req, res, next) => {
 	try {
-		const item = await Room.get(req.params.id);
-		if (!item) return next(NotFound());
-		item.delete();
-		return next(SendData());
+		const item = await Room.query('sk')
+			.eq('ROOM#' + req.params.id)
+			.limit(1)
+			.exec();
+		if (!item.count) return next(NotFound());
+
+		await item[0].delete();
+
+		// delete stays for the room
+		const stays = await Room.query('pk')
+			.eq('ROOM#' + req.params.id)
+			.exec();
+
+		await Promise.all(stays.map(row => row.delete()));
+
+		return next(SendData('Successfully deleted!'));
 	} catch (error) {
 		return next(ServerError(error));
 	}

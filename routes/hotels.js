@@ -7,12 +7,12 @@ const router = express.Router();
 
 router.get('/', isAuth, get);
 
-router.get('/:id', validator({ params: 'hotel' }), isAuth, getById);
+router.get('/:id', validator({ params: 'uuid' }), isAuth, getById);
 
 router.post('/', validator({ body: 'addHotel' }), isAuth, add);
 
-router.patch('/:id', validator({ params: 'hotel', body: 'addHotel' }), isAuth, update);
+router.patch('/:id', validator({ params: 'uuid', body: 'hotel' }), isAuth, update);
 
-router.delete('/:id', validator({ params: 'hotel' }), isAuth, del);
+router.delete('/:id', validator({ params: 'uuid' }), isAuth, del);
 
 module.exports = router;
