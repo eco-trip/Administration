@@ -6,7 +6,7 @@ const { Room } = require('../model/Room');
 exports.get = async (req, res, next) => {
 	try {
 		const items = await Room.scan().filter('sk').beginsWith('ROOM#').exec();
-		return next(SendData(items));
+		return next(SendData(items.map(el => el.serialize('response'))));
 	} catch (error) {
 		return next(ServerError(error));
 	}
@@ -20,7 +20,7 @@ exports.getById = async (req, res, next) => {
 			.exec();
 
 		if (!item.count) return next(NotFound());
-		return next(SendData(item[0]));
+		return next(SendData(item[0].serialize('response')));
 	} catch (error) {
 		return next(ServerError(error));
 	}
@@ -31,7 +31,7 @@ exports.add = async (req, res, next) => {
 		const id = uuidv1();
 		const { hotelId, number, floor } = req.body;
 		const item = await Room.create({ pk: 'HOTEL#' + hotelId, sk: 'ROOM#' + id, number, floor });
-		return next(SendData(item));
+		return next(SendData(item.serialize('response')));
 	} catch (error) {
 		return next(ServerError(error));
 	}

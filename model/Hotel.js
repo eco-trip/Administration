@@ -26,4 +26,11 @@ const schema = new dynamoose.Schema(
 	}
 );
 
-module.exports.Hotel = dynamoose.model('Hotel', schema);
+const Hotel = dynamoose.model('Hotel', schema);
+
+Hotel.serializer.add('response', {
+	exclude: ['pk', 'sk'],
+	modify: (serialized, original) => ({ ...serialized, id: original.sk.replace('METADATA#', '') })
+});
+
+module.exports.Hotel = Hotel;

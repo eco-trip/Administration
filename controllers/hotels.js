@@ -6,7 +6,7 @@ const { Hotel } = require('../model/Hotel');
 exports.get = async (req, res, next) => {
 	try {
 		const items = await Hotel.scan().filter('sk').beginsWith('METADATA#').exec();
-		return next(SendData(items));
+		return next(SendData(items.map(el => el.serialize('response'))));
 	} catch (error) {
 		return next(ServerError(error));
 	}
@@ -23,7 +23,7 @@ exports.getById = async (req, res, next) => {
 			.exec();
 
 		if (!item.count) return next(NotFound());
-		return next(SendData(item[0]));
+		return next(SendData(item[0].serialize('response')));
 	} catch (error) {
 		return next(ServerError(error));
 	}
@@ -33,7 +33,7 @@ exports.add = async (req, res, next) => {
 	try {
 		const id = uuidv1();
 		const item = await Hotel.create({ pk: 'HOTEL#' + id, sk: 'METADATA#' + id, ...req.body });
-		return next(SendData(item));
+		return next(SendData(item.serialize('response')));
 	} catch (error) {
 		return next(ServerError(error));
 	}

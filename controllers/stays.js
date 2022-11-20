@@ -6,7 +6,7 @@ const { Stay } = require('../model/Stay');
 exports.get = async (req, res, next) => {
 	try {
 		const items = await Stay.scan().filter('sk').beginsWith('STAY#').exec();
-		return next(SendData(items));
+		return next(SendData(items.map(el => el.serialize('response'))));
 	} catch (error) {
 		return next(ServerError(error));
 	}
@@ -20,7 +20,7 @@ exports.getById = async (req, res, next) => {
 			.exec();
 
 		if (!item.count) return next(NotFound());
-		return next(SendData(item[0]));
+		return next(SendData(item[0].serialize('response')));
 	} catch (error) {
 		return next(ServerError(error));
 	}
@@ -31,7 +31,7 @@ exports.add = async (req, res, next) => {
 		const id = uuidv1();
 		const { roomId, startTime } = req.body;
 		const item = await Stay.create({ pk: 'ROOM#' + roomId, sk: 'STAY#' + id, startTime: new Date(startTime) });
-		return next(SendData(item));
+		return next(SendData(item.serialize('response')));
 	} catch (error) {
 		return next(ServerError(error));
 	}

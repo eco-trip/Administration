@@ -36,4 +36,15 @@ const schema = new dynamoose.Schema(
 	}
 );
 
-module.exports.Stay = dynamoose.model('Stay', schema);
+const Stay = dynamoose.model('Stay', schema);
+
+Stay.serializer.add('response', {
+	exclude: ['pk', 'sk'],
+	modify: (serialized, original) => ({
+		...serialized,
+		roomID: original.pk.replace('ROOM#', ''),
+		id: original.sk.replace('STAY#', '')
+	})
+});
+
+module.exports.Stay = Stay;
