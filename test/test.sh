@@ -3,7 +3,7 @@
 source .env
 source .env.test
 
-if [ "$(docker container inspect -f '{{.State.Status}}' $CONTAINER_NAME)" != "running" ]; then
+if [ $(docker inspect -f '{{.State.Running}}' $CONTAINER_NAME) != "true" ]; then
 	docker kill $CONTAINER_NAME
 	docker rm $CONTAINER_NAME
 	if [[ "$(docker images -q $CONTAINER_NAME 2>/dev/null)" == "" ]]; then
@@ -14,11 +14,9 @@ fi
 
 ready="false"
 until [ "$ready" = "true" ]; do
-
 	if [ $(docker inspect -f '{{.State.Running}}' $CONTAINER_NAME) = "true" ]; then
 		ready="true"
 	fi
-
 	sleep 10
 done
 

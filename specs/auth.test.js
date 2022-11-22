@@ -2,9 +2,10 @@
 const supertest = require('supertest');
 const jwt = require('jsonwebtoken');
 const moment = require('moment');
+
 const { signUp, signIn } = require('../helpers/cognito');
 const { isAuth } = require('../middlewares/isAuth');
-const { Unauthorized } = require('../helpers/response');
+const { isAuthUnautorized, isAuthOk } = require('../test/utils');
 
 const app = require('../app');
 
@@ -62,7 +63,7 @@ describe('POST /auth/login', () => {
 
 		return agent
 			.post('/auth/login')
-			.send({ email: 'test@meblabs.com', password: 'wrongpwd' })
+			.send({ email: 'test@ecotrip.com', password: 'wrongpwd' })
 			.expect(400)
 			.then(res => {
 				expect(res.body).toEqual(expect.objectContaining({ error: 301 }));
@@ -74,7 +75,7 @@ describe('POST /auth/login', () => {
 
 		return agent
 			.post('/auth/login')
-			.send({ email: 'test@meblabs.com', password: 'testtest' })
+			.send({ email: 'test@ecotrip.com', password: 'testtest' })
 			.expect(401)
 			.then(res => {
 				expect(res.body).toEqual(expect.objectContaining({ error: 302 }));
@@ -85,7 +86,7 @@ describe('POST /auth/login', () => {
 		signIn.mockImplementation(() =>
 			Promise.resolve({
 				accessToken: 'accessToken123',
-				accessTokenPayload: { username: 'test@meblabs.com' },
+				accessTokenPayload: { username: 'test@ecotrip.com' },
 				accessTokenExp: moment()
 					.add(60 * 60, 's')
 					.unix(),
@@ -96,12 +97,12 @@ describe('POST /auth/login', () => {
 
 		return agent
 			.post('/auth/login')
-			.send({ email: 'test@meblabs.com', password: 'testtest' })
+			.send({ email: 'test@ecotrip.com', password: 'testtest' })
 			.expect(200)
 			.then(res => {
 				expect(res.headers['set-cookie'][0]).toContain('AccessToken=accessToken123;');
 				expect(res.headers['set-cookie'][1]).toContain('RefreshToken=refreshToken123;');
-				expect(res.body).toEqual(expect.objectContaining({ username: 'test@meblabs.com' }));
+				expect(res.body).toEqual(expect.objectContaining({ username: 'test@ecotrip.com' }));
 			});
 	});
 });
@@ -111,7 +112,7 @@ describe('GET /auth/check', () => {
 		signIn.mockImplementation(() =>
 			Promise.resolve({
 				accessToken: 'accessToken123',
-				accessTokenPayload: { username: 'test@meblabs.com' },
+				accessTokenPayload: { username: 'test@ecotrip.com' },
 				accessTokenExp: moment()
 					.add(60 * 60, 's')
 					.unix(),
@@ -120,31 +121,28 @@ describe('GET /auth/check', () => {
 			})
 		);
 
-		isAuth.mockImplementation((req, res, next) => {
-			res.locals.user = { username: 'test@meblabs.com' };
-			next();
-		});
+		isAuth.mockImplementation(isAuthOk);
 
 		await agent
 			.post('/auth/login')
-			.send({ email: 'test@meblabs.com', password: 'testtest' })
+			.send({ email: 'test@ecotrip.com', password: 'testtest' })
 			.expect(200)
 			.then(res => {
 				expect(res.headers['set-cookie'][0]).toContain('AccessToken=accessToken123;');
 				expect(res.headers['set-cookie'][1]).toContain('RefreshToken=refreshToken123;');
-				expect(res.body).toEqual(expect.objectContaining({ username: 'test@meblabs.com' }));
+				expect(res.body).toEqual(expect.objectContaining({ username: 'test@ecotrip.com' }));
 			});
 
 		return agent
 			.get('/auth/check')
 			.expect(200)
 			.then(res => {
-				expect(res.body).toEqual(expect.objectContaining({ username: 'test@meblabs.com' }));
+				expect(res.body).toEqual(expect.objectContaining({ username: 'test@ecotrip.com' }));
 			});
 	});
 
 	test('Check without token should be Unauthorized', async () => {
-		isAuth.mockImplementation((req, res, next) => next(Unauthorized()));
+		isAuth.mockImplementation(isAuthUnautorized);
 
 		agent
 			.get('/auth/check')
@@ -155,7 +153,7 @@ describe('GET /auth/check', () => {
 	});
 
 	test('Check with invalid token should be Unauthorized', async () => {
-		isAuth.mockImplementation((req, res, next) => next(Unauthorized()));
+		isAuth.mockImplementation(isAuthUnautorized);
 
 		const token = jwt.sign(
 			{
@@ -199,7 +197,7 @@ describe('POST /auth/register', () => {
 	test('Register new user without password should be MissingRequiredParameter', async () =>
 		agent
 			.post('/auth/register')
-			.send({ email: 'test@meblabs.com' })
+			.send({ email: 'test@ecotrip.com' })
 			.expect(400)
 			.then(res => {
 				expect(res.body).toEqual(expect.objectContaining({ error: 201, data: '/password' }));
@@ -210,7 +208,7 @@ describe('POST /auth/register', () => {
 
 		return agent
 			.post('/auth/register')
-			.send({ email: 'test@meblabs.com', password: 'invalidpassword', name: 'Pinco', family_name: 'Pallino' })
+			.send({ email: 'test@ecotrip.com', password: 'invalidpassword', name: 'Pinco', family_name: 'Pallino' })
 			.expect(400)
 			.then(res => {
 				expect(res.body).toEqual(expect.objectContaining({ error: 211, data: '/password' }));
@@ -220,7 +218,7 @@ describe('POST /auth/register', () => {
 	test('Register new user without name should be MissingRequiredParameter', async () =>
 		agent
 			.post('/auth/register')
-			.send({ email: 'test@meblabs.com', password: 'Testtest1!' })
+			.send({ email: 'test@ecotrip.com', password: 'Testtest1!' })
 			.expect(400)
 			.then(res => {
 				expect(res.body).toEqual(expect.objectContaining({ error: 201, data: '/name' }));
@@ -229,7 +227,7 @@ describe('POST /auth/register', () => {
 	test('Register new user without family_name should be MissingRequiredParameter', async () =>
 		agent
 			.post('/auth/register')
-			.send({ email: 'test@meblabs.com', password: 'Testtest1!', name: 'Pinco' })
+			.send({ email: 'test@ecotrip.com', password: 'Testtest1!', name: 'Pinco' })
 			.expect(400)
 			.then(res => {
 				expect(res.body).toEqual(expect.objectContaining({ error: 201, data: '/family_name' }));
@@ -240,7 +238,7 @@ describe('POST /auth/register', () => {
 
 		return agent
 			.post('/auth/register')
-			.send({ email: 'test@meblabs.com', password: 'Testtest1!', name: 'Pinco', family_name: 'Pallino' })
+			.send({ email: 'test@ecotrip.com', password: 'Testtest1!', name: 'Pinco', family_name: 'Pallino' })
 			.expect(400)
 			.then(res => {
 				expect(res.body).toEqual(expect.objectContaining({ error: 304 }));
@@ -248,14 +246,14 @@ describe('POST /auth/register', () => {
 	});
 
 	test('Register new user with correct information should be OK', async () => {
-		signUp.mockImplementation(() => Promise.resolve({ user: { username: 'test@meblabs.com' } }));
+		signUp.mockImplementation(() => Promise.resolve({ user: { username: 'test@ecotrip.com' } }));
 
 		await agent
 			.post('/auth/register')
-			.send({ email: 'test@meblabs.com', password: 'Testtest1!', name: 'Pinco', family_name: 'Pallino' })
+			.send({ email: 'test@ecotrip.com', password: 'Testtest1!', name: 'Pinco', family_name: 'Pallino' })
 			.expect(200)
 			.then(res => {
-				expect(res.body.user).toEqual(expect.objectContaining({ username: 'test@meblabs.com' }));
+				expect(res.body.user).toEqual(expect.objectContaining({ username: 'test@ecotrip.com' }));
 			});
 	});
 });

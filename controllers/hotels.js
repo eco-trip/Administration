@@ -33,7 +33,7 @@ exports.add = async (req, res, next) => {
 	try {
 		const id = uuidv1();
 		const item = await Hotel.create({ pk: 'HOTEL#' + id, sk: 'METADATA#' + id, ...req.body });
-		return next(SendData(item.serialize('response')));
+		return next(SendData(item.serialize('response'), 201));
 	} catch (error) {
 		return next(ServerError(error));
 	}

@@ -31,7 +31,7 @@ exports.add = async (req, res, next) => {
 		const id = uuidv1();
 		const { hotelId, number, floor } = req.body;
 		const item = await Room.create({ pk: 'HOTEL#' + hotelId, sk: 'ROOM#' + id, number, floor });
-		return next(SendData(item.serialize('response')));
+		return next(SendData(item.serialize('response'), 201));
 	} catch (error) {
 		return next(ServerError(error));
 	}
