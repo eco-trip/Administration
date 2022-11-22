@@ -8,8 +8,8 @@
 	"scripts": {
 		"start": "node index.js",
 		"start:remote": "remote=1 nodemon index.js > app.out.log 2> app.err.log < /dev/null &",
-		"test": "jest --verbose --runInBand",
-		"test:coverage": "jest --coverage --verbose --runInBand --silent",
+		"test": "bash test/test.sh",
+		"test:coverage": "bash test/test.sh --coverage",
 		"lint": "eslint . --ext .js",
 		"format": "prettier --write **/*.{json,js,yml,md}",
 		"format:check": "prettier --check **/*.{json,js,yml,md}"
