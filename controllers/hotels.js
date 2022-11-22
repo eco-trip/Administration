@@ -48,7 +48,7 @@ exports.update = async (req, res, next) => {
 			.beginsWith('METADATA#')
 			.exec();
 
-		if (!item) return next(NotFound());
+		if (!item.count) return next(NotFound());
 
 		// await Hotel.update({ id: req.params.id, ...req.body }); TODO
 		return next(SendData(item));

@@ -39,7 +39,7 @@ describe('Role: admin', () => {
 				});
 		});
 
-		test('Get all should contains jest one Hotel with serialized fields', async () => {
+		test('Get all should contains just one Hotel with serialized fields', async () => {
 			isAuth.mockImplementation(isAuthOk);
 
 			return agent
@@ -89,7 +89,7 @@ describe('Role: admin', () => {
 				});
 		});
 
-		test('Get hotel by id with correct id should contain serialized fields', async () => {
+		test('Get hotel with correct id should contain serialized fields', async () => {
 			isAuth.mockImplementation(isAuthOk);
 
 			return agent
@@ -161,7 +161,7 @@ describe('Role: admin', () => {
 					expect(result.name).toEqual(newHotel.name);
 
 					// check db
-					const items = await Hotel.scan().exec();
+					const items = await Hotel.scan().filter('sk').beginsWith('METADATA#').exec();
 					expect(items.length).toEqual(2);
 					const saved = items.find(e => e.name === newHotel.name);
 					expect(saved.pk).toContain('HOTEL#');
@@ -189,7 +189,7 @@ describe('Role: admin', () => {
 			isAuth.mockImplementation(isAuthOk);
 
 			return agent
-				.delete('/hotels/123')
+				.patch('/hotels/123')
 				.expect(400)
 				.then(res => {
 					expect(res.body).toEqual(expect.objectContaining({ error: 200 }));
@@ -200,7 +200,7 @@ describe('Role: admin', () => {
 			isAuth.mockImplementation(isAuthOk);
 
 			return agent
-				.delete('/hotels/' + uuidv1())
+				.patch('/hotels/' + uuidv1())
 				.expect(404)
 				.then(res => {
 					expect(res.body).toEqual(expect.objectContaining({ error: 404 }));
@@ -268,7 +268,7 @@ describe('Role: admin', () => {
 					expect(res.body).toEqual('Successfully deleted!');
 
 					// check db
-					const items = await Hotel.scan().exec();
+					const items = await Hotel.scan().filter('sk').beginsWith('METADATA#').exec();
 					expect(items.length).toEqual(0);
 				});
 		});

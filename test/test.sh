@@ -17,7 +17,7 @@ until [ "$ready" = "true" ]; do
 	if [ $(docker inspect -f '{{.State.Running}}' $CONTAINER_NAME) = "true" ]; then
 		ready="true"
 	fi
-	sleep 10
+	sleep 1
 done
 
 CMD="jest --verbose --forceExit --runInBand"

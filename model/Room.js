@@ -27,7 +27,7 @@ Room.serializer.add('response', {
 	exclude: ['pk', 'sk'],
 	modify: (serialized, original) => ({
 		...serialized,
-		hotelID: original.pk.replace('HOTEL#', ''),
+		hotelId: original.pk.replace('HOTEL#', ''),
 		id: original.sk.replace('ROOM#', '')
 	})
 });

@@ -7,12 +7,12 @@ const router = express.Router();
 
 router.get('/', isAuth, get);
 
-router.get('/:id', validator({ params: 'uuid' }), isAuth, getById);
+router.get('/:id', isAuth, validator({ params: 'uuid' }), getById);
 
-router.post('/', validator({ body: 'addStay' }), isAuth, add);
+router.post('/', isAuth, validator({ body: 'addStay' }), add);
 
-router.patch('/:id', validator({ params: 'uuid', body: 'stay' }), isAuth, update);
+router.patch('/:id', isAuth, validator({ params: 'uuid', body: 'stay' }), update);
 
-router.delete('/:id', validator({ params: 'uuid' }), isAuth, del);
+router.delete('/:id', isAuth, validator({ params: 'uuid' }), del);
 
 module.exports = router;

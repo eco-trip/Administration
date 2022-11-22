@@ -1,5 +1,6 @@
 const { Unauthorized } = require('../helpers/response');
 const { Hotel } = require('../model/Hotel');
+const { Room } = require('../model/Room');
 
 exports.uuidValidate = /^[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}$/gi;
 
@@ -11,3 +12,6 @@ exports.isAuthOk = (req, res, next) => {
 };
 
 exports.createHotel = async (id, data) => await Hotel.create({ pk: 'HOTEL#' + id, sk: 'METADATA#' + id, ...data });
+
+exports.createRoom = async (id, hotelId, data) =>
+	await Room.create({ pk: 'HOTEL#' + hotelId, sk: 'ROOM#' + id, ...data });

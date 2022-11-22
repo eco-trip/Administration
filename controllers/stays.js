@@ -43,6 +43,7 @@ exports.update = async (req, res, next) => {
 			.eq('STAY#' + req.params.id)
 			.limit(1)
 			.exec();
+
 		if (!item.count) return next(NotFound());
 
 		// await Stay.update({ id: req.params.id, ...req.body }); TODO
