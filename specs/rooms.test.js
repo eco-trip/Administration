@@ -324,7 +324,7 @@ describe('Role: admin', () => {
 				});
 		});
 
-		test('Delete existing room by id with correct id should contain serialized fields', async () => {
+		test('Delete existing room with correct id should be Ok', async () => {
 			isAuth.mockImplementation(isAuthOk);
 
 			return agent

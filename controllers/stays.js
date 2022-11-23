@@ -31,6 +31,7 @@ exports.add = async (req, res, next) => {
 		const id = uuidv1();
 		const { roomId, startTime } = req.body;
 		const item = await Stay.create({ pk: 'ROOM#' + roomId, sk: 'STAY#' + id, startTime: new Date(startTime) });
+		item.startTime = startTime;
 		return next(SendData(item.serialize('response'), 201));
 	} catch (error) {
 		return next(ServerError(error));

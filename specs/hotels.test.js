@@ -258,7 +258,7 @@ describe('Role: admin', () => {
 				});
 		});
 
-		test('Delete existing hotel by id with correct id should contain serialized fields', async () => {
+		test('Delete existing hotel with correct id should be Ok', async () => {
 			isAuth.mockImplementation(isAuthOk);
 
 			return agent
