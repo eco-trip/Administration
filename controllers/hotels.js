@@ -2,6 +2,7 @@ const { v1: uuidv1 } = require('uuid');
 
 const { SendData, NotFound, ServerError } = require('../helpers/response');
 const { Hotel } = require('../model/Hotel');
+const { Room } = require('../model/Room');
 
 exports.get = async (req, res, next) => {
 	try {
@@ -24,6 +25,43 @@ exports.getById = async (req, res, next) => {
 
 		if (!item.count) return next(NotFound());
 		return next(SendData(item[0].serialize('response')));
+	} catch (error) {
+		return next(ServerError(error));
+	}
+};
+
+exports.getRooms = async (req, res, next) => {
+	try {
+		const items = await Room.query('pk')
+			.eq('HOTEL#' + req.params.id)
+			.and()
+			.where('sk')
+			.beginsWith('ROOM#')
+			.exec();
+
+		if (!items.count) return next(NotFound());
+		return next(SendData(items.map(el => el.serialize('response'))));
+	} catch (error) {
+		return next(ServerError(error));
+	}
+};
+
+exports.putRoom = async (req, res, next) => {
+	try {
+		const hotel = await Hotel.query('pk')
+			.eq('HOTEL#' + req.params.id)
+			.and()
+			.where('sk')
+			.beginsWith('METADATA#')
+			.limit(1)
+			.exec();
+
+		if (!hotel.count) return next(NotFound());
+
+		const id = uuidv1();
+		const { number, floor } = req.body;
+		const item = await Room.create({ pk: 'HOTEL#' + req.params.id, sk: 'ROOM#' + id, number, floor });
+		return next(SendData(item.serialize('response'), 201));
 	} catch (error) {
 		return next(ServerError(error));
 	}

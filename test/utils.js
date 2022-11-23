@@ -3,7 +3,7 @@ const { Hotel } = require('../model/Hotel');
 const { Room } = require('../model/Room');
 const { Stay } = require('../model/Stay');
 
-exports.uuidValidate = /^[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}$/gi;
+exports.uuidValidate = () => /^[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}$/gi;
 
 exports.isAuthUnautorized = (req, res, next) => next(Unauthorized());
 

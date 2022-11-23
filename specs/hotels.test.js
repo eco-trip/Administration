@@ -3,10 +3,11 @@ const { v1: uuidv1 } = require('uuid');
 
 require('../db/connect');
 const { clear } = require('../test/clear');
-const { createHotel, isAuthUnautorized, isAuthOk, uuidValidate } = require('../test/utils');
+const { createHotel, createRoom, isAuthUnautorized, isAuthOk, uuidValidate } = require('../test/utils');
 const { isAuth } = require('../middlewares/isAuth');
 
 const { Hotel } = require('../model/Hotel');
+const { Room } = require('../model/Room');
 
 const app = require('../app');
 
@@ -103,6 +104,182 @@ describe('Role: admin', () => {
 		});
 	});
 
+	describe('GET /hotels/:id/rooms', () => {
+		test('Get rooms of the hotel without access token should be Unauthorized', async () => {
+			isAuth.mockImplementation(isAuthUnautorized);
+
+			return agent
+				.get('/hotels/' + hotelId + '/rooms')
+				.expect(401)
+				.then(res => {
+					expect(res.body).toEqual(expect.objectContaining({ error: 401 }));
+				});
+		});
+
+		test('Get rooms of the hotel with invalid id should be ValidationError', async () => {
+			isAuth.mockImplementation(isAuthOk);
+
+			return agent
+				.get('/hotels/123/rooms')
+				.expect(400)
+				.then(res => {
+					expect(res.body).toEqual(expect.objectContaining({ error: 200 }));
+				});
+		});
+
+		test('Get rooms of the hotel with inexistent id should be NotFound', async () => {
+			isAuth.mockImplementation(isAuthOk);
+
+			return agent
+				.get('/hotels/' + uuidv1() + '/rooms')
+				.expect(404)
+				.then(res => {
+					expect(res.body).toEqual(expect.objectContaining({ error: 404 }));
+				});
+		});
+
+		test('Get rooms of the hotel with correct id should contain one room', async () => {
+			isAuth.mockImplementation(isAuthOk);
+
+			const roomId = uuidv1();
+			const room = await createRoom(roomId, hotelId, { floor: 1, number: '101' });
+
+			return agent
+				.get('/hotels/' + hotelId + '/rooms')
+				.expect(200)
+				.then(res => {
+					expect(res.body.length).toBe(1);
+
+					const result = res.body[0];
+					expect(result.id).toEqual(room.sk.replace('ROOM#', ''));
+					expect(result.hotelId).toEqual(room.pk.replace('HOTEL#', ''));
+					expect(result.floor).toEqual(room.floor);
+					expect(result.number).toEqual(room.number);
+				});
+		});
+
+		test('Get rooms of the hotel with correct id should contain two rooms', async () => {
+			isAuth.mockImplementation(isAuthOk);
+
+			const room1 = await createRoom(uuidv1(), hotelId, { floor: 1, number: '101' });
+			const room2 = await createRoom(uuidv1(), hotelId, { floor: 2, number: '202' });
+
+			return agent
+				.get('/hotels/' + hotelId + '/rooms')
+				.expect(200)
+				.then(res => {
+					expect(res.body.length).toBe(2);
+
+					expect(res.body[0].id).toEqual(room1.sk.replace('ROOM#', ''));
+					expect(res.body[0].hotelId).toEqual(room1.pk.replace('HOTEL#', ''));
+					expect(res.body[0].floor).toEqual(room1.floor);
+					expect(res.body[0].number).toEqual(room1.number);
+
+					expect(res.body[1].id).toEqual(room2.sk.replace('ROOM#', ''));
+					expect(res.body[1].hotelId).toEqual(room2.pk.replace('HOTEL#', ''));
+					expect(res.body[1].floor).toEqual(room2.floor);
+					expect(res.body[1].number).toEqual(room2.number);
+				});
+		});
+	});
+
+	describe('PUT /hotels/:id/rooms', () => {
+		test('Put new room for the hotel without access token should be Unauthorized', async () => {
+			isAuth.mockImplementation(isAuthUnautorized);
+
+			const newRoom = { floor: 1, number: '101' };
+
+			return agent
+				.put('/hotels/' + hotelId + '/rooms')
+				.send(newRoom)
+				.expect(401)
+				.then(res => {
+					expect(res.body).toEqual(expect.objectContaining({ error: 401 }));
+				});
+		});
+
+		test('Put new room for the hotel with invalid id should be ValidationError', async () => {
+			isAuth.mockImplementation(isAuthOk);
+
+			const newRoom = { floor: 1, number: '101' };
+
+			return agent
+				.put('/hotels/123/rooms')
+				.send(newRoom)
+				.expect(400)
+				.then(res => {
+					expect(res.body).toEqual(expect.objectContaining({ error: 200 }));
+				});
+		});
+
+		test('Put new room for the hotel with inexistent id should be NotFound', async () => {
+			isAuth.mockImplementation(isAuthOk);
+
+			const newRoom = { floor: 1, number: '101' };
+
+			return agent
+				.put('/hotels/' + uuidv1() + '/rooms')
+				.send(newRoom)
+				.expect(404)
+				.then(res => {
+					expect(res.body).toEqual(expect.objectContaining({ error: 404 }));
+				});
+		});
+
+		test('Put new room for the hotel without floor should be MissingRequiredParameter', async () => {
+			isAuth.mockImplementation(isAuthOk);
+
+			const newRoom = { number: '101' };
+
+			return agent
+				.put('/hotels/' + hotelId + '/rooms')
+				.send(newRoom)
+				.expect(400)
+				.then(res => {
+					expect(res.body).toEqual(expect.objectContaining({ error: 201, data: '/floor' }));
+				});
+		});
+
+		test('Put new room for the hotel number should be MissingRequiredParameter', async () => {
+			isAuth.mockImplementation(isAuthOk);
+
+			const newRoom = { floor: 1 };
+
+			return agent
+				.put('/hotels/' + hotelId + '/rooms')
+				.send(newRoom)
+				.expect(400)
+				.then(res => {
+					expect(res.body).toEqual(expect.objectContaining({ error: 201, data: '/number' }));
+				});
+		});
+
+		test('Put new room for the hotel with correct id should be ok', async () => {
+			isAuth.mockImplementation(isAuthOk);
+
+			const newRoom = { floor: 1, number: '101' };
+
+			return agent
+				.put('/hotels/' + hotelId + '/rooms')
+				.send(newRoom)
+				.expect(201)
+				.then(async res => {
+					const result = res.body;
+					expect(uuidValidate().test(result.id)).toBe(true);
+					expect(result.floor).toEqual(newRoom.floor);
+					expect(result.number).toEqual(newRoom.number);
+					expect(result.hotelId).toEqual(hotelId);
+
+					// check db
+					const items = await Room.scan().filter('sk').beginsWith('ROOM#').exec();
+					expect(items.length).toEqual(1);
+					const saved = items.find(e => e.number === newRoom.number);
+					expect(saved.pk).toEqual('HOTEL#' + hotelId);
+					expect(saved.sk).toContain('ROOM#');
+				});
+		});
+	});
+
 	describe('POST /hotels', () => {
 		test('Add new hotel without access token should be Unauthorized', async () => {
 			isAuth.mockImplementation(isAuthUnautorized);
@@ -157,7 +334,7 @@ describe('Role: admin', () => {
 				.expect(201)
 				.then(async res => {
 					const result = res.body;
-					expect(uuidValidate.test(result.id)).toBe(true);
+					expect(uuidValidate().test(result.id)).toBe(true);
 					expect(result.name).toEqual(newHotel.name);
 
 					// check db

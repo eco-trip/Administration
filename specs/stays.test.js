@@ -209,7 +209,7 @@ describe('Role: admin', () => {
 				.expect(201)
 				.then(async res => {
 					const result = res.body;
-					expect(uuidValidate.test(result.id)).toBe(true);
+					expect(uuidValidate().test(result.id)).toBe(true);
 					expect(result.roomId).toEqual(roomId);
 					expect(result.startTime).toEqual(newStay.startTime);
 
