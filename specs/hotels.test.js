@@ -675,7 +675,7 @@ describe('Role: hotelier', () => {
 	});
 
 	describe('PUT /hotels/:id/rooms', () => {
-		test('Put new room of the hotel not of the hotelier should be Forbidden', async () => {
+		test('Put new room in the hotel not of the hotelier should be Forbidden', async () => {
 			isAuth.mockImplementation(isAuthHotelier(uuidv1()));
 
 			const newRoom = { floor: 1, number: '101' };
