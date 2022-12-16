@@ -1,13 +1,13 @@
 const { v1: uuidv1 } = require('uuid');
 
-const { SendData, NotFound, ServerError } = require('../helpers/response');
+const { SendData, NotFound, ServerError, Forbidden } = require('../helpers/response');
 const { Room } = require('../model/Room');
 const { Stay } = require('../model/Stay');
 
 exports.get = async (req, res, next) => {
 	try {
-		const items = await Room.scan().filter('sk').beginsWith('ROOM#').exec();
-		return next(SendData(items.map(el => el.serialize('response'))));
+		const rooms = await Room.scan().filter('sk').beginsWith('ROOM#').exec();
+		return next(SendData(rooms.map(el => el.serialize('response'))));
 	} catch (error) {
 		return next(ServerError(error));
 	}
@@ -15,13 +15,17 @@ exports.get = async (req, res, next) => {
 
 exports.getById = async (req, res, next) => {
 	try {
-		const item = await Room.query('sk')
+		const room = await Room.query('sk')
 			.eq('ROOM#' + req.params.id)
 			.limit(1)
 			.exec();
 
-		if (!item.count) return next(NotFound());
-		return next(SendData(item[0].serialize('response')));
+		if (!room.count) return next(NotFound());
+
+		if (res.locals.grants.type !== 'any' && res.locals.user['custom:hotelId'] !== room[0].serialize('response').hotelId)
+			return next(Forbidden());
+
+		return next(SendData(room[0].serialize('response')));
 	} catch (error) {
 		return next(ServerError(error));
 	}
@@ -29,15 +33,26 @@ exports.getById = async (req, res, next) => {
 
 exports.getStays = async (req, res, next) => {
 	try {
-		const items = await Stay.query('pk')
+		const room = await Room.query('sk')
+			.eq('ROOM#' + req.params.id)
+			.limit(1)
+			.exec();
+
+		if (!room.count) return next(NotFound());
+
+		if (res.locals.grants.type !== 'any' && res.locals.user['custom:hotelId'] !== room[0].serialize('response').hotelId)
+			return next(Forbidden());
+
+		const stays = await Stay.query('pk')
 			.eq('ROOM#' + req.params.id)
 			.and()
 			.where('sk')
 			.beginsWith('STAY#')
 			.exec();
 
-		if (!items.count) return next(NotFound());
-		return next(SendData(items.map(el => el.serialize('response'))));
+		if (!stays.count) return next(NotFound());
+
+		return next(SendData(stays.map(el => el.serialize('response'))));
 	} catch (error) {
 		return next(ServerError(error));
 	}
@@ -52,10 +67,13 @@ exports.putStay = async (req, res, next) => {
 
 		if (!room.count) return next(NotFound());
 
+		if (res.locals.grants.type !== 'any' && res.locals.user['custom:hotelId'] !== room[0].serialize('response').hotelId)
+			return next(Forbidden());
+
 		const id = uuidv1();
 		const { startTime } = req.body;
-		const item = await Stay.create({ pk: 'ROOM#' + req.params.id, sk: 'STAY#' + id, startTime: new Date(startTime) });
-		return next(SendData(item.serialize('response'), 201));
+		const stay = await Stay.create({ pk: 'ROOM#' + req.params.id, sk: 'STAY#' + id, startTime: new Date(startTime) });
+		return next(SendData(stay.serialize('response'), 201));
 	} catch (error) {
 		return next(ServerError(error));
 	}
@@ -63,10 +81,13 @@ exports.putStay = async (req, res, next) => {
 
 exports.add = async (req, res, next) => {
 	try {
+		if (res.locals.grants.type !== 'any' && res.locals.user['custom:hotelId'] !== req.body.hotelId)
+			return next(Forbidden());
+
 		const id = uuidv1();
 		const { hotelId, number, floor } = req.body;
-		const item = await Room.create({ pk: 'HOTEL#' + hotelId, sk: 'ROOM#' + id, number, floor });
-		return next(SendData(item.serialize('response'), 201));
+		const room = await Room.create({ pk: 'HOTEL#' + hotelId, sk: 'ROOM#' + id, number, floor });
+		return next(SendData(room.serialize('response'), 201));
 	} catch (error) {
 		return next(ServerError(error));
 	}
@@ -81,8 +102,11 @@ exports.update = async (req, res, next) => {
 
 		if (!room.count) return next(NotFound());
 
-		const item = await Room.update({ pk: room[0].pk, sk: 'ROOM#' + req.params.id }, { ...req.body });
-		return next(SendData(item.serialize('response')));
+		if (res.locals.grants.type !== 'any' && res.locals.user['custom:hotelId'] !== room[0].serialize('response').hotelId)
+			return next(Forbidden());
+
+		const edit = await Room.update({ pk: room[0].pk, sk: 'ROOM#' + req.params.id }, { ...req.body });
+		return next(SendData(edit.serialize('response')));
 	} catch (error) {
 		return next(ServerError(error));
 	}
@@ -90,13 +114,17 @@ exports.update = async (req, res, next) => {
 
 exports.del = async (req, res, next) => {
 	try {
-		const item = await Room.query('sk')
+		const room = await Room.query('sk')
 			.eq('ROOM#' + req.params.id)
 			.limit(1)
 			.exec();
-		if (!item.count) return next(NotFound());
 
-		await item[0].delete();
+		if (!room.count) return next(NotFound());
+
+		if (res.locals.grants.type !== 'any' && res.locals.user['custom:hotelId'] !== room[0].serialize('response').hotelId)
+			return next(Forbidden());
+
+		await room[0].delete();
 
 		// delete stays for the room
 		const stays = await Room.query('pk')
