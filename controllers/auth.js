@@ -15,19 +15,25 @@ const {
 exports.login = (req, res, next) =>
 	signIn(req.body.email, req.body.password)
 		.then(tokens => {
-			res.cookie('AccessToken', tokens.accessToken, {
+			res.cookie('accessToken', tokens.accessToken, {
 				httpOnly: true,
 				expires: new Date(tokens.accessTokenExp * 1000),
 				sameSite: 'strict',
 				path: '/'
 			});
-			res.cookie('RefreshToken', tokens.refreshToken, {
+			res.cookie('refreshToken', tokens.refreshToken, {
 				httpOnly: true,
 				expires: new Date(moment().add(tokens.refreshTokenExp, 's').format()),
 				sameSite: 'strict',
 				path: '/'
 			});
-			next(SendData(tokens.accessTokenPayload));
+			res.cookie('idToken', tokens.idToken, {
+				httpOnly: true,
+				expires: new Date(tokens.idTokenExp * 1000),
+				sameSite: 'strict',
+				path: '/'
+			});
+			next(SendData(tokens.idTokenPayload));
 		})
 		.catch(e => {
 			const code = e.code || e.message;

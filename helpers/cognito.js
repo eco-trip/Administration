@@ -48,7 +48,10 @@ const signIn = (email, password) =>
 					accessTokenPayload: result.getAccessToken().payload,
 					accessTokenExp: result.getAccessToken().getExpiration(),
 					refreshToken: result.getRefreshToken().getToken(),
-					refreshTokenExp: process.env.RT_EXPIRES_TIME
+					refreshTokenExp: process.env.RT_EXPIRES_TIME,
+					idToken: result.getIdToken().getJwtToken(),
+					idTokenPayload: result.getIdToken().payload,
+					idTokenExp: result.getIdToken().getExpiration()
 				};
 				return resolve(tokens);
 			},
