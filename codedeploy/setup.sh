@@ -14,6 +14,7 @@ ENV=$(cat /home/ec2-user/env)
 Secrets=$(aws secretsmanager get-secret-value --secret-id ${AWS_SECRETS} --cli-connect-timeout 1)
 Urls=$(echo ${Secrets} | jq .SecretString | jq -rc . | jq -rc '.Urls')
 Project=$(echo ${Secrets} | jq .SecretString | jq -rc . | jq -rc '.Project')
+GUEST_JWT_SECRET=$(echo ${Secrets} | jq .SecretString | jq -rc . | jq -rc '.GUEST_JWT_SECRET')
 
 aws s3 cp ${Urls} ./urls.json
 AppUrl=$(cat urls.json | jq ".app.${ENV}" | tr -d '"')
@@ -27,6 +28,8 @@ echo "APP_URL=${AppUrl}" >>.env.${ENV}
 echo "APP_CORS_ORIGIN=https://${AppUrl}" >>.env.${ENV}
 echo "CP_URL=${CpUlr}" >>.env.${ENV}
 echo "CP_CORS_ORIGIN=https://${CpUlr}" >>.env.${ENV}
+
+echo "GUEST_JWT_SECRET=${GUEST_JWT_SECRET}" >>.env.${ENV}
 
 CognitoUserPoolID=$(aws cognito-idp describe-user-pool-domain --domain ${AuthUrl} | jq -r '.DomainDescription.UserPoolId')
 CognitoAppClientID=$(aws cognito-idp list-user-pool-clients --user-pool-id ${CognitoUserPoolID} | jq -r '.UserPoolClients[].ClientId')
