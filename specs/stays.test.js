@@ -219,6 +219,7 @@ describe('Role: admin', () => {
 					const saved = items.find(e => e.sk === 'STAY#' + result.id);
 					expect(saved.pk).toEqual('ROOM#' + roomId);
 					expect(saved.startTime.toISOString()).toEqual(newStay.startTime);
+					expect(saved.endTime).toBeUndefined();
 				});
 		});
 	});
@@ -227,11 +228,11 @@ describe('Role: admin', () => {
 		test('Update existing stay without access token should be Unauthorized', async () => {
 			isAuth.mockImplementation(isAuthUnautorized);
 
-			const newStay = { startTime: now.toISOString(), roomId };
+			const editStay = { startTime: now.toISOString() };
 
 			return agent
 				.patch('/stays/' + stayId)
-				.send(newStay)
+				.send(editStay)
 				.expect(401)
 				.then(res => {
 					expect(res.body).toEqual(expect.objectContaining({ error: 401 }));
@@ -263,18 +264,67 @@ describe('Role: admin', () => {
 		test('Update existing stay with unknown field should be AdditionalParameters not permetted', async () => {
 			isAuth.mockImplementation(isAuthOk);
 
-			const newStay = { name: 2 };
+			const editStay = { name: 2 };
 
 			return agent
 				.patch('/stays/' + stayId)
-				.send(newStay)
+				.send(editStay)
 				.expect(400)
 				.then(res => {
 					expect(res.body).toEqual(expect.objectContaining({ error: 202, data: '/name' }));
 				});
 		});
 
-		test.todo('Update existing room with correct data should be ok');
+		test('Update existing room with only startTime data should be ok', async () => {
+			isAuth.mockImplementation(isAuthOk);
+
+			const editStay = { startTime: now.toISOString() };
+
+			return agent
+				.patch('/stays/' + stayId)
+				.send(editStay)
+				.expect(200)
+				.then(async res => {
+					const result = res.body;
+					expect(uuidValidate().test(result.id)).toBe(true);
+					expect(result.roomId).toEqual(roomId);
+					expect(result.startTime).toEqual(editStay.startTime);
+
+					// check db
+					const items = await Stay.scan().filter('sk').beginsWith('STAY#').exec();
+					expect(items.length).toEqual(1);
+					const saved = items.find(e => e.sk === 'STAY#' + result.id);
+					expect(saved.pk).toEqual('ROOM#' + roomId);
+					expect(saved.startTime.toISOString()).toEqual(editStay.startTime);
+					expect(saved.endTime).toBeUndefined();
+				});
+		});
+
+		test('Update existing room with startTime and endTime should be ok', async () => {
+			isAuth.mockImplementation(isAuthOk);
+
+			const editStay = { startTime: now.toISOString(), endTime: now.toISOString() };
+
+			return agent
+				.patch('/stays/' + stayId)
+				.send(editStay)
+				.expect(200)
+				.then(async res => {
+					const result = res.body;
+					expect(uuidValidate().test(result.id)).toBe(true);
+					expect(result.roomId).toEqual(roomId);
+					expect(result.startTime).toEqual(editStay.startTime);
+					expect(result.endTime).toEqual(editStay.endTime);
+
+					// check db
+					const items = await Stay.scan().filter('sk').beginsWith('STAY#').exec();
+					expect(items.length).toEqual(1);
+					const saved = items.find(e => e.sk === 'STAY#' + result.id);
+					expect(saved.pk).toEqual('ROOM#' + roomId);
+					expect(saved.startTime.toISOString()).toEqual(editStay.startTime);
+					expect(saved.endTime.toISOString()).toEqual(editStay.endTime);
+				});
+		});
 	});
 
 	describe('DELETE /stays/:id', () => {

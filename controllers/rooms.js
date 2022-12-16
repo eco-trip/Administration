@@ -74,15 +74,15 @@ exports.add = async (req, res, next) => {
 
 exports.update = async (req, res, next) => {
 	try {
-		const item = await Room.query('sk')
+		const room = await Room.query('sk')
 			.eq('ROOM#' + req.params.id)
 			.limit(1)
 			.exec();
 
-		if (!item.count) return next(NotFound());
+		if (!room.count) return next(NotFound());
 
-		// await Room.update({ id: req.params.id, ...req.body }); TODO
-		return next(SendData(item));
+		const item = await Room.update({ pk: room[0].pk, sk: 'ROOM#' + req.params.id }, { ...req.body });
+		return next(SendData(item.serialize('response')));
 	} catch (error) {
 		return next(ServerError(error));
 	}

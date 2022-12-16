@@ -343,7 +343,7 @@ describe('Role: admin', () => {
 				});
 		});
 
-		test('Add new room with invalid hotelId shouldbe ValidationError', async () => {
+		test('Add new room with invalid hotelId should be ValidationError', async () => {
 			isAuth.mockImplementation(isAuthOk);
 
 			const newRoom = { floor: 'a', number: '201', hotelId: '1234abcd' };
@@ -390,9 +390,10 @@ describe('Role: admin', () => {
 					// check db
 					const items = await Room.scan().filter('sk').beginsWith('ROOM#').exec();
 					expect(items.length).toEqual(2);
-					const saved = items.find(e => e.number === newRoom.number);
+					const saved = items.find(e => e.sk === 'ROOM#' + result.id);
 					expect(saved.pk).toEqual('HOTEL#' + hotelId);
-					expect(saved.sk).toContain('ROOM#');
+					expect(saved.floor).toEqual(newRoom.floor);
+					expect(saved.number).toEqual(newRoom.number);
 				});
 		});
 	});
@@ -401,11 +402,11 @@ describe('Role: admin', () => {
 		test('Update existing room without access token should be Unauthorized', async () => {
 			isAuth.mockImplementation(isAuthUnautorized);
 
-			const newRoom = { floor: 2, number: '201', hotelId };
+			const editRoom = { floor: 2, number: '201' };
 
 			return agent
 				.patch('/rooms/' + roomId)
-				.send(newRoom)
+				.send(editRoom)
 				.expect(401)
 				.then(res => {
 					expect(res.body).toEqual(expect.objectContaining({ error: 401 }));
@@ -437,18 +438,91 @@ describe('Role: admin', () => {
 		test('Update existing room with unknown field should be AdditionalParameters not permetted', async () => {
 			isAuth.mockImplementation(isAuthOk);
 
-			const newRoom = { name: 2 };
+			const editRoom = { name: 2 };
 
 			return agent
 				.patch('/rooms/' + roomId)
-				.send(newRoom)
+				.send(editRoom)
 				.expect(400)
 				.then(res => {
 					expect(res.body).toEqual(expect.objectContaining({ error: 202, data: '/name' }));
 				});
 		});
 
-		test.todo('Update existing room with correct data should be ok');
+		test('Update existing room with correct data should be ok', async () => {
+			isAuth.mockImplementation(isAuthOk);
+
+			const editRoom = { floor: 2, number: '201' };
+
+			return agent
+				.patch('/rooms/' + roomId)
+				.send(editRoom)
+				.expect(200)
+				.then(async res => {
+					const result = res.body;
+					expect(uuidValidate().test(result.id)).toBe(true);
+					expect(result.floor).toEqual(editRoom.floor);
+					expect(result.number).toEqual(editRoom.number);
+
+					// check db
+					const items = await Room.scan().filter('sk').beginsWith('ROOM#').exec();
+					expect(items.length).toEqual(1);
+					const saved = items.find(e => e.sk === 'ROOM#' + result.id);
+					expect(saved.pk).toEqual('HOTEL#' + hotelId);
+					expect(saved.floor).toEqual(editRoom.floor);
+					expect(saved.number).toEqual(editRoom.number);
+				});
+		});
+
+		test('Update existing room with only floor field should be ok', async () => {
+			isAuth.mockImplementation(isAuthOk);
+
+			const editRoom = { floor: 2 };
+
+			return agent
+				.patch('/rooms/' + roomId)
+				.send(editRoom)
+				.expect(200)
+				.then(async res => {
+					const result = res.body;
+					expect(uuidValidate().test(result.id)).toBe(true);
+					expect(result.floor).toEqual(editRoom.floor);
+					expect(result.number).toEqual('101');
+
+					// check db
+					const items = await Room.scan().filter('sk').beginsWith('ROOM#').exec();
+					expect(items.length).toEqual(1);
+					const saved = items.find(e => e.sk === 'ROOM#' + result.id);
+					expect(saved.pk).toEqual('HOTEL#' + hotelId);
+					expect(saved.floor).toEqual(editRoom.floor);
+					expect(saved.number).toEqual('101');
+				});
+		});
+
+		test('Update existing room with only number field should be ok', async () => {
+			isAuth.mockImplementation(isAuthOk);
+
+			const editRoom = { number: '500' };
+
+			return agent
+				.patch('/rooms/' + roomId)
+				.send(editRoom)
+				.expect(200)
+				.then(async res => {
+					const result = res.body;
+					expect(uuidValidate().test(result.id)).toBe(true);
+					expect(result.floor).toEqual(1);
+					expect(result.number).toEqual(editRoom.number);
+
+					// check db
+					const items = await Room.scan().filter('sk').beginsWith('ROOM#').exec();
+					expect(items.length).toEqual(1);
+					const saved = items.find(e => e.sk === 'ROOM#' + result.id);
+					expect(saved.pk).toEqual('HOTEL#' + hotelId);
+					expect(saved.floor).toEqual(1);
+					expect(saved.number).toEqual(editRoom.number);
+				});
+		});
 	});
 
 	describe('DELETE /rooms/:id', () => {

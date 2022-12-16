@@ -273,9 +273,10 @@ describe('Role: admin', () => {
 					// check db
 					const items = await Room.scan().filter('sk').beginsWith('ROOM#').exec();
 					expect(items.length).toEqual(1);
-					const saved = items.find(e => e.number === newRoom.number);
+					const saved = items.find(e => e.sk === 'ROOM#' + result.id);
 					expect(saved.pk).toEqual('HOTEL#' + hotelId);
-					expect(saved.sk).toContain('ROOM#');
+					expect(saved.floor).toEqual(newRoom.floor);
+					expect(saved.number).toEqual(newRoom.number);
 				});
 		});
 	});
@@ -323,6 +324,20 @@ describe('Role: admin', () => {
 				});
 		});
 
+		test('Add new hotel with invalid country should be ok', async () => {
+			isAuth.mockImplementation(isAuthOk);
+
+			const newHotel = { name: 'New Hotel', country: 'ITALY' };
+
+			return agent
+				.post('/hotels/')
+				.send(newHotel)
+				.expect(400)
+				.then(res => {
+					expect(res.body).toEqual(expect.objectContaining({ error: 200, data: '/country' }));
+				});
+		});
+
 		test('Add new hotel with correct data should be ok', async () => {
 			isAuth.mockImplementation(isAuthOk);
 
@@ -340,9 +355,52 @@ describe('Role: admin', () => {
 					// check db
 					const items = await Hotel.scan().filter('sk').beginsWith('METADATA#').exec();
 					expect(items.length).toEqual(2);
-					const saved = items.find(e => e.name === newHotel.name);
-					expect(saved.pk).toContain('HOTEL#');
-					expect(saved.sk).toContain('METADATA#');
+					const saved = items.find(e => e.pk === 'HOTEL#' + result.id);
+					expect(saved.sk).toEqual('METADATA#' + result.id);
+					expect(saved.name).toEqual(newHotel.name);
+				});
+		});
+
+		test('Add new hotel with all allowed fields data should be ok', async () => {
+			isAuth.mockImplementation(isAuthOk);
+
+			const newHotel = {
+				name: 'Edit Hotel',
+				description: 'description',
+				cost: 10,
+				country: 'IT',
+				city: 'Fano',
+				address: 'Via Roma 1',
+				zipcode: '61032'
+			};
+
+			return agent
+				.post('/hotels/')
+				.send(newHotel)
+				.expect(201)
+				.then(async res => {
+					const result = res.body;
+					expect(uuidValidate().test(result.id)).toBe(true);
+					expect(result.name).toEqual(newHotel.name);
+					expect(result.description).toEqual(newHotel.description);
+					expect(result.cost).toEqual(newHotel.cost);
+					expect(result.country).toEqual(newHotel.country);
+					expect(result.city).toEqual(newHotel.city);
+					expect(result.address).toEqual(newHotel.address);
+					expect(result.zipcode).toEqual(newHotel.zipcode);
+
+					// check db
+					const items = await Hotel.scan().filter('sk').beginsWith('METADATA#').exec();
+					expect(items.length).toEqual(2);
+					const saved = items.find(e => e.pk === 'HOTEL#' + result.id);
+					expect(saved.sk).toEqual('METADATA#' + result.id);
+					expect(saved.name).toEqual(newHotel.name);
+					expect(saved.description).toEqual(newHotel.description);
+					expect(saved.cost).toEqual(newHotel.cost);
+					expect(saved.country).toEqual(newHotel.country);
+					expect(saved.city).toEqual(newHotel.city);
+					expect(saved.address).toEqual(newHotel.address);
+					expect(saved.zipcode).toEqual(newHotel.zipcode);
 				});
 		});
 	});
@@ -351,11 +409,11 @@ describe('Role: admin', () => {
 		test('Update existing hotel without access token should be Unauthorized', async () => {
 			isAuth.mockImplementation(isAuthUnautorized);
 
-			const newHotel = { name: 'New Hotel' };
+			const editHotel = { name: 'Edit Hotel' };
 
 			return agent
 				.patch('/hotels/' + hotelId)
-				.send(newHotel)
+				.send(editHotel)
 				.expect(401)
 				.then(res => {
 					expect(res.body).toEqual(expect.objectContaining({ error: 401 }));
@@ -387,18 +445,95 @@ describe('Role: admin', () => {
 		test('Update existing hotel with unknown field should be AdditionalParameters not permetted', async () => {
 			isAuth.mockImplementation(isAuthOk);
 
-			const newHotel = { title: 'New Hotel' };
+			const editHotel = { title: 'Edit Hotel' };
 
 			return agent
 				.patch('/hotels/' + hotelId)
-				.send(newHotel)
+				.send(editHotel)
 				.expect(400)
 				.then(res => {
 					expect(res.body).toEqual(expect.objectContaining({ error: 202, data: '/title' }));
 				});
 		});
 
-		test.todo('Update existing hotel with correct data should be ok');
+		test('Update existing hotel with invalid country should be ok', async () => {
+			isAuth.mockImplementation(isAuthOk);
+
+			const editHotel = { country: 'ITALY' };
+
+			return agent
+				.patch('/hotels/' + hotelId)
+				.send(editHotel)
+				.expect(400)
+				.then(async res => {
+					expect(res.body).toEqual(expect.objectContaining({ error: 200, data: '/country' }));
+				});
+		});
+
+		test('Update existing hotel with correct data should be ok', async () => {
+			isAuth.mockImplementation(isAuthOk);
+
+			const editHotel = { name: 'Edit Hotel' };
+
+			return agent
+				.patch('/hotels/' + hotelId)
+				.send(editHotel)
+				.expect(200)
+				.then(async res => {
+					const result = res.body;
+					expect(uuidValidate().test(result.id)).toBe(true);
+					expect(result.name).toEqual(editHotel.name);
+
+					// check db
+					const items = await Hotel.scan().filter('sk').beginsWith('METADATA#').exec();
+					expect(items.length).toEqual(1);
+					const saved = items.find(e => e.pk === 'HOTEL#' + hotelId);
+					expect(saved.sk).toEqual('METADATA#' + hotelId);
+					expect(saved.name).toEqual(editHotel.name);
+				});
+		});
+
+		test('Update existing hotel with all allowed fields should be ok', async () => {
+			isAuth.mockImplementation(isAuthOk);
+
+			const editHotel = {
+				name: 'Edit Hotel',
+				description: 'description',
+				cost: 10,
+				country: 'IT',
+				city: 'Fano',
+				address: 'Via Roma 1',
+				zipcode: '61032'
+			};
+
+			return agent
+				.patch('/hotels/' + hotelId)
+				.send(editHotel)
+				.expect(200)
+				.then(async res => {
+					const result = res.body;
+					expect(uuidValidate().test(result.id)).toBe(true);
+					expect(result.name).toEqual(editHotel.name);
+					expect(result.description).toEqual(editHotel.description);
+					expect(result.cost).toEqual(editHotel.cost);
+					expect(result.country).toEqual(editHotel.country);
+					expect(result.city).toEqual(editHotel.city);
+					expect(result.address).toEqual(editHotel.address);
+					expect(result.zipcode).toEqual(editHotel.zipcode);
+
+					// check db
+					const items = await Hotel.scan().filter('sk').beginsWith('METADATA#').exec();
+					expect(items.length).toEqual(1);
+					const saved = items.find(e => e.pk === 'HOTEL#' + hotelId);
+					expect(saved.name).toEqual(editHotel.name);
+					expect(saved.description).toEqual(editHotel.description);
+					expect(saved.cost).toEqual(editHotel.cost);
+					expect(saved.country).toEqual(editHotel.country);
+					expect(saved.city).toEqual(editHotel.city);
+					expect(saved.address).toEqual(editHotel.address);
+					expect(saved.zipcode).toEqual(editHotel.zipcode);
+				});
+		});
 	});
 
 	describe('DELETE /hotels/:id', () => {

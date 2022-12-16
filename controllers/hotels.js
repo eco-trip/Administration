@@ -79,17 +79,18 @@ exports.add = async (req, res, next) => {
 
 exports.update = async (req, res, next) => {
 	try {
-		const item = await Hotel.query('pk')
+		const hotel = await Hotel.query('pk')
 			.eq('HOTEL#' + req.params.id)
 			.and()
 			.where('sk')
 			.beginsWith('METADATA#')
+			.limit(1)
 			.exec();
 
-		if (!item.count) return next(NotFound());
+		if (!hotel.count) return next(NotFound());
 
-		// await Hotel.update({ id: req.params.id, ...req.body }); TODO
-		return next(SendData(item));
+		const item = await Hotel.update({ pk: 'HOTEL#' + req.params.id, sk: 'METADATA#' + req.params.id }, { ...req.body });
+		return next(SendData(item.serialize('response')));
 	} catch (error) {
 		return next(ServerError(error));
 	}

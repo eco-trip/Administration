@@ -39,15 +39,19 @@ exports.add = async (req, res, next) => {
 
 exports.update = async (req, res, next) => {
 	try {
-		const item = await Stay.query('sk')
+		const stay = await Stay.query('sk')
 			.eq('STAY#' + req.params.id)
 			.limit(1)
 			.exec();
 
-		if (!item.count) return next(NotFound());
+		if (!stay.count) return next(NotFound());
 
-		// await Stay.update({ id: req.params.id, ...req.body }); TODO
-		return next(SendData(item));
+		const { endTime, startTime } = req.body;
+		const item = await Stay.update(
+			{ pk: stay[0].pk, sk: 'STAY#' + req.params.id },
+			{ startTime: startTime && new Date(startTime), endTime: endTime && new Date(endTime) }
+		);
+		return next(SendData(item.serialize('response')));
 	} catch (error) {
 		return next(ServerError(error));
 	}
