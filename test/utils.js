@@ -7,8 +7,26 @@ exports.uuidValidate = () => /^[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\
 
 exports.isAuthUnautorized = (req, res, next) => next(Unauthorized());
 
-exports.isAuthOk = (req, res, next) => {
-	res.locals.user = { username: 'test@ecotrip.com' };
+exports.isAuthAdmin = (req, res, next) => {
+	res.locals.user = {
+		'custom:lang': 'it',
+		token_use: 'id',
+		name: 'Admin',
+		'custom:role': 'admin',
+		email: 'admin@meblabs.com'
+	};
+	next();
+};
+
+exports.isAuthHotelier = hotelId => (req, res, next) => {
+	res.locals.user = {
+		'custom:lang': 'it',
+		token_use: 'id',
+		name: 'Hotelier',
+		'custom:role': 'hotelier',
+		'custom:hotelId': hotelId,
+		email: 'hotelier@meblabs.com'
+	};
 	next();
 };
 

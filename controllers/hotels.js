@@ -1,6 +1,6 @@
 const { v1: uuidv1 } = require('uuid');
 
-const { SendData, NotFound, ServerError } = require('../helpers/response');
+const { SendData, NotFound, ServerError, Forbidden } = require('../helpers/response');
 const { Hotel } = require('../model/Hotel');
 const { Room } = require('../model/Room');
 
@@ -15,6 +15,9 @@ exports.get = async (req, res, next) => {
 
 exports.getById = async (req, res, next) => {
 	try {
+		if (res.locals.grants.type !== 'any' && res.locals.user['custom:hotelId'] !== req.params.id)
+			return next(Forbidden());
+
 		const item = await Hotel.query('pk')
 			.eq('HOTEL#' + req.params.id)
 			.and()
@@ -32,6 +35,9 @@ exports.getById = async (req, res, next) => {
 
 exports.getRooms = async (req, res, next) => {
 	try {
+		if (res.locals.grants.type !== 'any' && res.locals.user['custom:hotelId'] !== req.params.id)
+			return next(Forbidden());
+
 		const items = await Room.query('pk')
 			.eq('HOTEL#' + req.params.id)
 			.and()
@@ -48,6 +54,9 @@ exports.getRooms = async (req, res, next) => {
 
 exports.putRoom = async (req, res, next) => {
 	try {
+		if (res.locals.grants.type !== 'any' && res.locals.user['custom:hotelId'] !== req.params.id)
+			return next(Forbidden());
+
 		const hotel = await Hotel.query('pk')
 			.eq('HOTEL#' + req.params.id)
 			.and()
@@ -79,6 +88,9 @@ exports.add = async (req, res, next) => {
 
 exports.update = async (req, res, next) => {
 	try {
+		if (res.locals.grants.type !== 'any' && res.locals.user['custom:hotelId'] !== req.params.id)
+			return next(Forbidden());
+
 		const hotel = await Hotel.query('pk')
 			.eq('HOTEL#' + req.params.id)
 			.and()

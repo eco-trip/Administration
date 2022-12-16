@@ -3,7 +3,7 @@ const { v1: uuidv1 } = require('uuid');
 
 require('../db/connect');
 const { clear } = require('../test/clear');
-const { createHotel, createRoom, createStay, isAuthUnautorized, isAuthOk, uuidValidate } = require('../test/utils');
+const { createHotel, createRoom, createStay, isAuthUnautorized, isAuthAdmin, uuidValidate } = require('../test/utils');
 const { isAuth } = require('../middlewares/isAuth');
 
 const { Room } = require('../model/Room');
@@ -46,7 +46,7 @@ describe('Role: admin', () => {
 		});
 
 		test('Get all should contains just one room with serialized fields', async () => {
-			isAuth.mockImplementation(isAuthOk);
+			isAuth.mockImplementation(isAuthAdmin);
 
 			return agent
 				.get('/rooms')
@@ -76,7 +76,7 @@ describe('Role: admin', () => {
 		});
 
 		test('Get room with invalid id should be ValidationError', async () => {
-			isAuth.mockImplementation(isAuthOk);
+			isAuth.mockImplementation(isAuthAdmin);
 
 			return agent
 				.get('/rooms/123')
@@ -87,7 +87,7 @@ describe('Role: admin', () => {
 		});
 
 		test('Get room with inexistent id should be NotFound', async () => {
-			isAuth.mockImplementation(isAuthOk);
+			isAuth.mockImplementation(isAuthAdmin);
 
 			return agent
 				.get('/rooms/' + uuidv1())
@@ -98,7 +98,7 @@ describe('Role: admin', () => {
 		});
 
 		test('Get room with correct id should contain serialized fields', async () => {
-			isAuth.mockImplementation(isAuthOk);
+			isAuth.mockImplementation(isAuthAdmin);
 
 			return agent
 				.get('/rooms/' + roomId)
@@ -127,7 +127,7 @@ describe('Role: admin', () => {
 		});
 
 		test('Get stays of the room with invalid id should be ValidationError', async () => {
-			isAuth.mockImplementation(isAuthOk);
+			isAuth.mockImplementation(isAuthAdmin);
 
 			return agent
 				.get('/rooms/123/stays')
@@ -138,7 +138,7 @@ describe('Role: admin', () => {
 		});
 
 		test('Get stays of the room with inexistent id should be NotFound', async () => {
-			isAuth.mockImplementation(isAuthOk);
+			isAuth.mockImplementation(isAuthAdmin);
 
 			return agent
 				.get('/rooms/' + uuidv1() + '/stays')
@@ -149,7 +149,7 @@ describe('Role: admin', () => {
 		});
 
 		test('Get stays of the room with correct id should contain one stay', async () => {
-			isAuth.mockImplementation(isAuthOk);
+			isAuth.mockImplementation(isAuthAdmin);
 
 			const stayId = uuidv1();
 			const stay = await createStay(stayId, roomId, { startTime: now });
@@ -168,7 +168,7 @@ describe('Role: admin', () => {
 		});
 
 		test('Get stays of the room with correct id should contain two stays', async () => {
-			isAuth.mockImplementation(isAuthOk);
+			isAuth.mockImplementation(isAuthAdmin);
 
 			const stay1 = await createStay(uuidv1(), roomId, { startTime: now });
 			const stay2 = await createStay(uuidv1(), roomId, { startTime: now });
@@ -206,7 +206,7 @@ describe('Role: admin', () => {
 		});
 
 		test('Put new stay for the room with invalid id should be ValidationError', async () => {
-			isAuth.mockImplementation(isAuthOk);
+			isAuth.mockImplementation(isAuthAdmin);
 
 			const newStay = { startTime: now.toISOString() };
 
@@ -220,7 +220,7 @@ describe('Role: admin', () => {
 		});
 
 		test('Put new stay for the room with inexistent id should be NotFound', async () => {
-			isAuth.mockImplementation(isAuthOk);
+			isAuth.mockImplementation(isAuthAdmin);
 
 			const newStay = { startTime: now.toISOString() };
 
@@ -234,7 +234,7 @@ describe('Role: admin', () => {
 		});
 
 		test('Put new stay for the room without startTime should be MissingRequiredParameter', async () => {
-			isAuth.mockImplementation(isAuthOk);
+			isAuth.mockImplementation(isAuthAdmin);
 
 			const newStay = {};
 
@@ -248,7 +248,7 @@ describe('Role: admin', () => {
 		});
 
 		test('Put new stay for the room with correct id should be ok', async () => {
-			isAuth.mockImplementation(isAuthOk);
+			isAuth.mockImplementation(isAuthAdmin);
 
 			const newStay = { startTime: now.toISOString() };
 
@@ -288,7 +288,7 @@ describe('Role: admin', () => {
 		});
 
 		test('Add new room without floor should be MissingRequiredParameter', async () => {
-			isAuth.mockImplementation(isAuthOk);
+			isAuth.mockImplementation(isAuthAdmin);
 
 			const newRoom = { number: '201', hotelId };
 
@@ -302,7 +302,7 @@ describe('Role: admin', () => {
 		});
 
 		test('Add new room without number should be MissingRequiredParameter', async () => {
-			isAuth.mockImplementation(isAuthOk);
+			isAuth.mockImplementation(isAuthAdmin);
 
 			const newRoom = { floor: 2, hotelId };
 
@@ -316,7 +316,7 @@ describe('Role: admin', () => {
 		});
 
 		test('Add new room without hotelId should be MissingRequiredParameter', async () => {
-			isAuth.mockImplementation(isAuthOk);
+			isAuth.mockImplementation(isAuthAdmin);
 
 			const newRoom = { floor: 2, number: '201' };
 
@@ -330,7 +330,7 @@ describe('Role: admin', () => {
 		});
 
 		test('Add new room with floor as string should be ValidationError', async () => {
-			isAuth.mockImplementation(isAuthOk);
+			isAuth.mockImplementation(isAuthAdmin);
 
 			const newRoom = { floor: 'a', number: '201', hotelId };
 
@@ -344,7 +344,7 @@ describe('Role: admin', () => {
 		});
 
 		test('Add new room with invalid hotelId should be ValidationError', async () => {
-			isAuth.mockImplementation(isAuthOk);
+			isAuth.mockImplementation(isAuthAdmin);
 
 			const newRoom = { floor: 'a', number: '201', hotelId: '1234abcd' };
 
@@ -358,7 +358,7 @@ describe('Role: admin', () => {
 		});
 
 		test('Add new room with unknown field should be AdditionalParameters not permetted', async () => {
-			isAuth.mockImplementation(isAuthOk);
+			isAuth.mockImplementation(isAuthAdmin);
 
 			const newRoom = { name: 2 };
 
@@ -372,7 +372,7 @@ describe('Role: admin', () => {
 		});
 
 		test('Add new room with correct data should be ok', async () => {
-			isAuth.mockImplementation(isAuthOk);
+			isAuth.mockImplementation(isAuthAdmin);
 
 			const newRoom = { floor: 2, number: '201', hotelId };
 
@@ -414,7 +414,7 @@ describe('Role: admin', () => {
 		});
 
 		test('Update existing room with invalid id should be ValidationError', async () => {
-			isAuth.mockImplementation(isAuthOk);
+			isAuth.mockImplementation(isAuthAdmin);
 
 			return agent
 				.patch('/rooms/123')
@@ -425,7 +425,7 @@ describe('Role: admin', () => {
 		});
 
 		test('Update existing room with inexistent id should be NotFound', async () => {
-			isAuth.mockImplementation(isAuthOk);
+			isAuth.mockImplementation(isAuthAdmin);
 
 			return agent
 				.patch('/rooms/' + uuidv1())
@@ -436,7 +436,7 @@ describe('Role: admin', () => {
 		});
 
 		test('Update existing room with unknown field should be AdditionalParameters not permetted', async () => {
-			isAuth.mockImplementation(isAuthOk);
+			isAuth.mockImplementation(isAuthAdmin);
 
 			const editRoom = { name: 2 };
 
@@ -450,7 +450,7 @@ describe('Role: admin', () => {
 		});
 
 		test('Update existing room with correct data should be ok', async () => {
-			isAuth.mockImplementation(isAuthOk);
+			isAuth.mockImplementation(isAuthAdmin);
 
 			const editRoom = { floor: 2, number: '201' };
 
@@ -475,7 +475,7 @@ describe('Role: admin', () => {
 		});
 
 		test('Update existing room with only floor field should be ok', async () => {
-			isAuth.mockImplementation(isAuthOk);
+			isAuth.mockImplementation(isAuthAdmin);
 
 			const editRoom = { floor: 2 };
 
@@ -500,7 +500,7 @@ describe('Role: admin', () => {
 		});
 
 		test('Update existing room with only number field should be ok', async () => {
-			isAuth.mockImplementation(isAuthOk);
+			isAuth.mockImplementation(isAuthAdmin);
 
 			const editRoom = { number: '500' };
 
@@ -538,7 +538,7 @@ describe('Role: admin', () => {
 		});
 
 		test('Delete existing room with invalid id should be ValidationError', async () => {
-			isAuth.mockImplementation(isAuthOk);
+			isAuth.mockImplementation(isAuthAdmin);
 
 			return agent
 				.delete('/rooms/123')
@@ -549,7 +549,7 @@ describe('Role: admin', () => {
 		});
 
 		test('Delete existing room with inexistent id should be NotFound', async () => {
-			isAuth.mockImplementation(isAuthOk);
+			isAuth.mockImplementation(isAuthAdmin);
 
 			return agent
 				.delete('/rooms/' + uuidv1())
@@ -560,7 +560,7 @@ describe('Role: admin', () => {
 		});
 
 		test('Delete existing room with correct id should be ok', async () => {
-			isAuth.mockImplementation(isAuthOk);
+			isAuth.mockImplementation(isAuthAdmin);
 
 			return agent
 				.delete('/rooms/' + roomId)

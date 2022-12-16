@@ -5,7 +5,7 @@ const moment = require('moment');
 
 const { signUp, signIn } = require('../helpers/cognito');
 const { isAuth } = require('../middlewares/isAuth');
-const { isAuthUnautorized, isAuthOk } = require('../test/utils');
+const { isAuthUnautorized, isAuthAdmin } = require('../test/utils');
 
 const app = require('../app');
 
@@ -121,7 +121,7 @@ describe('GET /auth/check', () => {
 			})
 		);
 
-		isAuth.mockImplementation(isAuthOk);
+		isAuth.mockImplementation(isAuthAdmin);
 
 		await agent
 			.post('/auth/login')

@@ -3,7 +3,7 @@ const { v1: uuidv1 } = require('uuid');
 
 require('../db/connect');
 const { clear } = require('../test/clear');
-const { createHotel, createRoom, createStay, isAuthUnautorized, isAuthOk, uuidValidate } = require('../test/utils');
+const { createHotel, createRoom, createStay, isAuthUnautorized, isAuthAdmin, uuidValidate } = require('../test/utils');
 const { isAuth } = require('../middlewares/isAuth');
 
 const { Stay } = require('../model/Stay');
@@ -47,7 +47,7 @@ describe('Role: admin', () => {
 		});
 
 		test('Get all should contains just one stay with serialized fields', async () => {
-			isAuth.mockImplementation(isAuthOk);
+			isAuth.mockImplementation(isAuthAdmin);
 
 			return agent
 				.get('/stays')
@@ -76,7 +76,7 @@ describe('Role: admin', () => {
 		});
 
 		test('Get stay with invalid id should be ValidationError', async () => {
-			isAuth.mockImplementation(isAuthOk);
+			isAuth.mockImplementation(isAuthAdmin);
 
 			return agent
 				.get('/stays/123')
@@ -87,7 +87,7 @@ describe('Role: admin', () => {
 		});
 
 		test('Get stay with inexistent id should be NotFound', async () => {
-			isAuth.mockImplementation(isAuthOk);
+			isAuth.mockImplementation(isAuthAdmin);
 
 			return agent
 				.get('/stays/' + uuidv1())
@@ -98,7 +98,7 @@ describe('Role: admin', () => {
 		});
 
 		test('Get stay with correct id should contain serialized fields', async () => {
-			isAuth.mockImplementation(isAuthOk);
+			isAuth.mockImplementation(isAuthAdmin);
 
 			return agent
 				.get('/stays/' + stayId)
@@ -129,7 +129,7 @@ describe('Role: admin', () => {
 		});
 
 		test('Add new stay without startTime should be MissingRequiredParameter', async () => {
-			isAuth.mockImplementation(isAuthOk);
+			isAuth.mockImplementation(isAuthAdmin);
 
 			const newStay = { roomId };
 
@@ -143,7 +143,7 @@ describe('Role: admin', () => {
 		});
 
 		test('Add new stay without roomId should be MissingRequiredParameter', async () => {
-			isAuth.mockImplementation(isAuthOk);
+			isAuth.mockImplementation(isAuthAdmin);
 
 			const newStay = { startTime: now.toISOString() };
 
@@ -157,7 +157,7 @@ describe('Role: admin', () => {
 		});
 
 		test('Add new stay with startTime not Datetime should be ValidationError', async () => {
-			isAuth.mockImplementation(isAuthOk);
+			isAuth.mockImplementation(isAuthAdmin);
 
 			const newStay = { startTime: 123 };
 
@@ -171,7 +171,7 @@ describe('Role: admin', () => {
 		});
 
 		test('Add new stay with incorrect roomId should be ValidationError', async () => {
-			isAuth.mockImplementation(isAuthOk);
+			isAuth.mockImplementation(isAuthAdmin);
 
 			const newStay = { startTime: now.toISOString(), roomId: '1234abcd' };
 
@@ -185,7 +185,7 @@ describe('Role: admin', () => {
 		});
 
 		test('Add new stay with unknown field should be AdditionalParameters not permetted', async () => {
-			isAuth.mockImplementation(isAuthOk);
+			isAuth.mockImplementation(isAuthAdmin);
 
 			const newStay = { name: 2 };
 
@@ -199,7 +199,7 @@ describe('Role: admin', () => {
 		});
 
 		test('Add new stay with correct data should be ok', async () => {
-			isAuth.mockImplementation(isAuthOk);
+			isAuth.mockImplementation(isAuthAdmin);
 
 			const newStay = { startTime: now.toISOString(), roomId };
 
@@ -240,7 +240,7 @@ describe('Role: admin', () => {
 		});
 
 		test('Update existing stay with invalid id should be ValidationError', async () => {
-			isAuth.mockImplementation(isAuthOk);
+			isAuth.mockImplementation(isAuthAdmin);
 
 			return agent
 				.patch('/stays/123')
@@ -251,7 +251,7 @@ describe('Role: admin', () => {
 		});
 
 		test('Update existing stay with inexistent id should be NotFound', async () => {
-			isAuth.mockImplementation(isAuthOk);
+			isAuth.mockImplementation(isAuthAdmin);
 
 			return agent
 				.patch('/stays/' + uuidv1())
@@ -262,7 +262,7 @@ describe('Role: admin', () => {
 		});
 
 		test('Update existing stay with unknown field should be AdditionalParameters not permetted', async () => {
-			isAuth.mockImplementation(isAuthOk);
+			isAuth.mockImplementation(isAuthAdmin);
 
 			const editStay = { name: 2 };
 
@@ -276,7 +276,7 @@ describe('Role: admin', () => {
 		});
 
 		test('Update existing room with only startTime data should be ok', async () => {
-			isAuth.mockImplementation(isAuthOk);
+			isAuth.mockImplementation(isAuthAdmin);
 
 			const editStay = { startTime: now.toISOString() };
 
@@ -301,7 +301,7 @@ describe('Role: admin', () => {
 		});
 
 		test('Update existing room with startTime and endTime should be ok', async () => {
-			isAuth.mockImplementation(isAuthOk);
+			isAuth.mockImplementation(isAuthAdmin);
 
 			const editStay = { startTime: now.toISOString(), endTime: now.toISOString() };
 
@@ -340,7 +340,7 @@ describe('Role: admin', () => {
 		});
 
 		test('Delete existing stay with invalid id should be ValidationError', async () => {
-			isAuth.mockImplementation(isAuthOk);
+			isAuth.mockImplementation(isAuthAdmin);
 
 			return agent
 				.delete('/stays/123')
@@ -351,7 +351,7 @@ describe('Role: admin', () => {
 		});
 
 		test('Delete existing stay with inexistent id should be NotFound', async () => {
-			isAuth.mockImplementation(isAuthOk);
+			isAuth.mockImplementation(isAuthAdmin);
 
 			return agent
 				.delete('/stays/' + uuidv1())
@@ -362,7 +362,7 @@ describe('Role: admin', () => {
 		});
 
 		test('Delete existing stay with correct id should be ok', async () => {
-			isAuth.mockImplementation(isAuthOk);
+			isAuth.mockImplementation(isAuthAdmin);
 
 			return agent
 				.delete('/stays/' + stayId)
