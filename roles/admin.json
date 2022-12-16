@@ -1,5 +1,17 @@
 {
-	"users": {
+	"hotels": {
+		"create:any": ["*"],
+		"read:any": ["*"],
+		"update:any": ["*"],
+		"delete:any": ["*"]
+	},
+	"rooms": {
+		"create:any": ["*"],
+		"read:any": ["*"],
+		"update:any": ["*"],
+		"delete:any": ["*"]
+	},
+	"stays": {
 		"create:any": ["*"],
 		"read:any": ["*"],
 		"update:any": ["*"],
