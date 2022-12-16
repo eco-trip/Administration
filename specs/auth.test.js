@@ -86,23 +86,29 @@ describe('POST /auth/login', () => {
 		signIn.mockImplementation(() =>
 			Promise.resolve({
 				accessToken: 'accessToken123',
-				accessTokenPayload: { username: 'test@ecotrip.com' },
+				accessTokenPayload: { username: 'admin@ecotrip.com' },
 				accessTokenExp: moment()
 					.add(60 * 60, 's')
 					.unix(),
 				refreshToken: 'refreshToken123',
-				refreshTokenExp: process.env.RT_EXPIRES_TIME
+				refreshTokenExp: process.env.RT_EXPIRES_TIME,
+				idToken: 'idToken123',
+				idTokenPayload: { username: 'admin@ecotrip.com' },
+				idTokenExp: moment()
+					.add(60 * 60, 's')
+					.unix()
 			})
 		);
 
 		return agent
 			.post('/auth/login')
-			.send({ email: 'test@ecotrip.com', password: 'testtest' })
+			.send({ email: 'admin@ecotrip.com', password: 'testtest' })
 			.expect(200)
 			.then(res => {
-				expect(res.headers['set-cookie'][0]).toContain('AccessToken=accessToken123;');
-				expect(res.headers['set-cookie'][1]).toContain('RefreshToken=refreshToken123;');
-				expect(res.body).toEqual(expect.objectContaining({ username: 'test@ecotrip.com' }));
+				expect(res.headers['set-cookie'][0]).toContain('accessToken=accessToken123;');
+				expect(res.headers['set-cookie'][1]).toContain('refreshToken=refreshToken123;');
+				expect(res.headers['set-cookie'][2]).toContain('idToken=idToken123;');
+				expect(res.body).toEqual(expect.objectContaining({ username: 'admin@ecotrip.com' }));
 			});
 	});
 });
@@ -112,12 +118,17 @@ describe('GET /auth/check', () => {
 		signIn.mockImplementation(() =>
 			Promise.resolve({
 				accessToken: 'accessToken123',
-				accessTokenPayload: { username: 'test@ecotrip.com' },
+				accessTokenPayload: { username: 'admin@ecotrip.com' },
 				accessTokenExp: moment()
 					.add(60 * 60, 's')
 					.unix(),
 				refreshToken: 'refreshToken123',
-				refreshTokenExp: process.env.RT_EXPIRES_TIME
+				refreshTokenExp: process.env.RT_EXPIRES_TIME,
+				idToken: 'idToken123',
+				idTokenPayload: { username: 'admin@ecotrip.com' },
+				idTokenExp: moment()
+					.add(60 * 60, 's')
+					.unix()
 			})
 		);
 
@@ -125,19 +136,20 @@ describe('GET /auth/check', () => {
 
 		await agent
 			.post('/auth/login')
-			.send({ email: 'test@ecotrip.com', password: 'testtest' })
+			.send({ email: 'admin@ecotrip.com', password: 'testtest' })
 			.expect(200)
 			.then(res => {
-				expect(res.headers['set-cookie'][0]).toContain('AccessToken=accessToken123;');
-				expect(res.headers['set-cookie'][1]).toContain('RefreshToken=refreshToken123;');
-				expect(res.body).toEqual(expect.objectContaining({ username: 'test@ecotrip.com' }));
+				expect(res.headers['set-cookie'][0]).toContain('accessToken=accessToken123;');
+				expect(res.headers['set-cookie'][1]).toContain('refreshToken=refreshToken123;');
+				expect(res.headers['set-cookie'][2]).toContain('idToken=idToken123;');
+				expect(res.body).toEqual(expect.objectContaining({ username: 'admin@ecotrip.com' }));
 			});
 
 		return agent
 			.get('/auth/check')
 			.expect(200)
 			.then(res => {
-				expect(res.body).toEqual(expect.objectContaining({ username: 'test@ecotrip.com' }));
+				expect(res.body).toEqual(expect.objectContaining({ username: 'admin@ecotrip.com' }));
 			});
 	});
 

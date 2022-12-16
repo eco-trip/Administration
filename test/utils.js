@@ -13,7 +13,8 @@ exports.isAuthAdmin = (req, res, next) => {
 		token_use: 'id',
 		name: 'Admin',
 		'custom:role': 'admin',
-		email: 'admin@meblabs.com'
+		email: 'admin@ecotrip.com',
+		username: 'admin@ecotrip.com'
 	};
 	next();
 };
@@ -25,7 +26,8 @@ exports.isAuthHotelier = hotelId => (req, res, next) => {
 		name: 'Hotelier',
 		'custom:role': 'hotelier',
 		'custom:hotelId': hotelId,
-		email: 'hotelier@meblabs.com'
+		email: 'hotelier@ecotrip.com',
+		username: 'hotelier@ecotrip.com'
 	};
 	next();
 };
