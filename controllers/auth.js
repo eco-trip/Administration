@@ -64,7 +64,8 @@ exports.register = async (req, res, next) => {
 		name: req.body.name,
 		family_name: req.body.family_name,
 		'custom:lang': req.body.lang,
-		'custom:role': req.body.role ? req.body.role : 'user'
+		'custom:role': req.body.role ? req.body.role : 'hotelier',
+		'custom:hotelId': req.body.hotelId ? req.body.hotelId : null
 	};
 
 	return signUp(req.body.email, req.body.password, attribute)
