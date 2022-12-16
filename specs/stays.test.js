@@ -198,7 +198,7 @@ describe('Role: admin', () => {
 				});
 		});
 
-		test('Add new stay with correct data should be Ok', async () => {
+		test('Add new stay with correct data should be ok', async () => {
 			isAuth.mockImplementation(isAuthOk);
 
 			const newStay = { startTime: now.toISOString(), roomId };
@@ -216,9 +216,9 @@ describe('Role: admin', () => {
 					// check db
 					const items = await Stay.scan().filter('sk').beginsWith('STAY#').exec();
 					expect(items.length).toEqual(2);
-					// const saved = items.find(e => e.number === newRoom.number);
-					// expect(saved.pk).toEqual('HOTEL#' + hotelId);
-					// expect(saved.sk).toContain('ROOM#');
+					const saved = items.find(e => e.sk === 'STAY#' + result.id);
+					expect(saved.pk).toEqual('ROOM#' + roomId);
+					expect(saved.startTime.toISOString()).toEqual(newStay.startTime);
 				});
 		});
 	});
@@ -274,7 +274,7 @@ describe('Role: admin', () => {
 				});
 		});
 
-		test.todo('Update existing room with correct data should be Ok');
+		test.todo('Update existing room with correct data should be ok');
 	});
 
 	describe('DELETE /stays/:id', () => {
@@ -311,7 +311,7 @@ describe('Role: admin', () => {
 				});
 		});
 
-		test('Delete existing stay with correct id should be Ok', async () => {
+		test('Delete existing stay with correct id should be ok', async () => {
 			isAuth.mockImplementation(isAuthOk);
 
 			return agent

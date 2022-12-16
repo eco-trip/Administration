@@ -43,7 +43,9 @@ Stay.serializer.add('response', {
 	modify: (serialized, original) => ({
 		...serialized,
 		roomId: original.pk.replace('ROOM#', ''),
-		id: original.sk.replace('STAY#', '')
+		id: original.sk.replace('STAY#', ''),
+		startTime: original.startTime && new Date(original.startTime).toISOString(),
+		endTime: original.endTime && new Date(original.endTime).toISOString()
 	})
 });
 

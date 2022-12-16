@@ -40,7 +40,7 @@ describe('Role: admin', () => {
 				});
 		});
 
-		test('Get all should contains just one Hotel with serialized fields', async () => {
+		test('Get all should contains just one hotel with serialized fields', async () => {
 			isAuth.mockImplementation(isAuthOk);
 
 			return agent
@@ -240,7 +240,7 @@ describe('Role: admin', () => {
 				});
 		});
 
-		test('Put new room for the hotel number should be MissingRequiredParameter', async () => {
+		test('Put new room for the hotel without number should be MissingRequiredParameter', async () => {
 			isAuth.mockImplementation(isAuthOk);
 
 			const newRoom = { floor: 1 };
@@ -323,7 +323,7 @@ describe('Role: admin', () => {
 				});
 		});
 
-		test('Add new hotel with correct data should be Ok', async () => {
+		test('Add new hotel with correct data should be ok', async () => {
 			isAuth.mockImplementation(isAuthOk);
 
 			const newHotel = { name: 'New Hotel' };
@@ -398,7 +398,7 @@ describe('Role: admin', () => {
 				});
 		});
 
-		test.todo('Update existing hotel with correct data should be Ok');
+		test.todo('Update existing hotel with correct data should be ok');
 	});
 
 	describe('DELETE /hotels/:id', () => {
@@ -435,7 +435,7 @@ describe('Role: admin', () => {
 				});
 		});
 
-		test('Delete existing hotel with correct id should be Ok', async () => {
+		test('Delete existing hotel with correct id should be ok', async () => {
 			isAuth.mockImplementation(isAuthOk);
 
 			return agent

@@ -2,6 +2,7 @@ const { v1: uuidv1 } = require('uuid');
 
 const { SendData, NotFound, ServerError } = require('../helpers/response');
 const { Room } = require('../model/Room');
+const { Stay } = require('../model/Stay');
 
 exports.get = async (req, res, next) => {
 	try {
@@ -21,6 +22,40 @@ exports.getById = async (req, res, next) => {
 
 		if (!item.count) return next(NotFound());
 		return next(SendData(item[0].serialize('response')));
+	} catch (error) {
+		return next(ServerError(error));
+	}
+};
+
+exports.getStays = async (req, res, next) => {
+	try {
+		const items = await Stay.query('pk')
+			.eq('ROOM#' + req.params.id)
+			.and()
+			.where('sk')
+			.beginsWith('STAY#')
+			.exec();
+
+		if (!items.count) return next(NotFound());
+		return next(SendData(items.map(el => el.serialize('response'))));
+	} catch (error) {
+		return next(ServerError(error));
+	}
+};
+
+exports.putStay = async (req, res, next) => {
+	try {
+		const room = await Room.query('sk')
+			.eq('ROOM#' + req.params.id)
+			.limit(1)
+			.exec();
+
+		if (!room.count) return next(NotFound());
+
+		const id = uuidv1();
+		const { startTime } = req.body;
+		const item = await Stay.create({ pk: 'ROOM#' + req.params.id, sk: 'STAY#' + id, startTime: new Date(startTime) });
+		return next(SendData(item.serialize('response'), 201));
 	} catch (error) {
 		return next(ServerError(error));
 	}

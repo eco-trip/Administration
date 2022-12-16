@@ -3,10 +3,11 @@ const { v1: uuidv1 } = require('uuid');
 
 require('../db/connect');
 const { clear } = require('../test/clear');
-const { createHotel, createRoom, isAuthUnautorized, isAuthOk, uuidValidate } = require('../test/utils');
+const { createHotel, createRoom, createStay, isAuthUnautorized, isAuthOk, uuidValidate } = require('../test/utils');
 const { isAuth } = require('../middlewares/isAuth');
 
 const { Room } = require('../model/Room');
+const { Stay } = require('../model/Stay');
 
 const app = require('../app');
 
@@ -19,6 +20,8 @@ let room;
 
 const hotelId = uuidv1();
 const roomId = uuidv1();
+
+const now = new Date();
 
 beforeEach(async () => {
 	agent = supertest.agent(app);
@@ -107,6 +110,164 @@ describe('Role: admin', () => {
 					expect(result.hotelId).toEqual(hotel.pk.replace('HOTEL#', ''));
 					expect(result.floor).toEqual(room.floor);
 					expect(result.number).toEqual(room.number);
+				});
+		});
+	});
+
+	describe('GET /rooms/:id/stays', () => {
+		test('Get stays of the room without access token should be Unauthorized', async () => {
+			isAuth.mockImplementation(isAuthUnautorized);
+
+			return agent
+				.get('/rooms/' + hotelId + '/stays')
+				.expect(401)
+				.then(res => {
+					expect(res.body).toEqual(expect.objectContaining({ error: 401 }));
+				});
+		});
+
+		test('Get stays of the room with invalid id should be ValidationError', async () => {
+			isAuth.mockImplementation(isAuthOk);
+
+			return agent
+				.get('/rooms/123/stays')
+				.expect(400)
+				.then(res => {
+					expect(res.body).toEqual(expect.objectContaining({ error: 200 }));
+				});
+		});
+
+		test('Get stays of the room with inexistent id should be NotFound', async () => {
+			isAuth.mockImplementation(isAuthOk);
+
+			return agent
+				.get('/rooms/' + uuidv1() + '/stays')
+				.expect(404)
+				.then(res => {
+					expect(res.body).toEqual(expect.objectContaining({ error: 404 }));
+				});
+		});
+
+		test('Get stays of the room with correct id should contain one stay', async () => {
+			isAuth.mockImplementation(isAuthOk);
+
+			const stayId = uuidv1();
+			const stay = await createStay(stayId, roomId, { startTime: now });
+
+			return agent
+				.get('/rooms/' + roomId + '/stays')
+				.expect(200)
+				.then(res => {
+					expect(res.body.length).toBe(1);
+
+					const result = res.body[0];
+					expect(result.id).toEqual(stay.sk.replace('STAY#', ''));
+					expect(result.roomId).toEqual(stay.pk.replace('ROOM#', ''));
+					expect(result.startTime).toEqual(now.toISOString());
+				});
+		});
+
+		test('Get stays of the room with correct id should contain two stays', async () => {
+			isAuth.mockImplementation(isAuthOk);
+
+			const stay1 = await createStay(uuidv1(), roomId, { startTime: now });
+			const stay2 = await createStay(uuidv1(), roomId, { startTime: now });
+
+			return agent
+				.get('/rooms/' + roomId + '/stays')
+				.expect(200)
+				.then(res => {
+					expect(res.body.length).toBe(2);
+
+					expect(res.body[0].id).toEqual(stay1.sk.replace('STAY#', ''));
+					expect(res.body[0].roomId).toEqual(stay1.pk.replace('ROOM#', ''));
+					expect(res.body[0].startTime).toEqual(now.toISOString());
+
+					expect(res.body[1].id).toEqual(stay2.sk.replace('STAY#', ''));
+					expect(res.body[1].roomId).toEqual(stay2.pk.replace('ROOM#', ''));
+					expect(res.body[1].startTime).toEqual(now.toISOString());
+				});
+		});
+	});
+
+	describe('PUT /rooms/:id/stays', () => {
+		test('Put new stay for the room without access token should be Unauthorized', async () => {
+			isAuth.mockImplementation(isAuthUnautorized);
+
+			const newStay = { startTime: now.toISOString() };
+
+			return agent
+				.put('/rooms/' + roomId + '/stays')
+				.send(newStay)
+				.expect(401)
+				.then(res => {
+					expect(res.body).toEqual(expect.objectContaining({ error: 401 }));
+				});
+		});
+
+		test('Put new stay for the room with invalid id should be ValidationError', async () => {
+			isAuth.mockImplementation(isAuthOk);
+
+			const newStay = { startTime: now.toISOString() };
+
+			return agent
+				.put('/rooms/123/stays')
+				.send(newStay)
+				.expect(400)
+				.then(res => {
+					expect(res.body).toEqual(expect.objectContaining({ error: 200 }));
+				});
+		});
+
+		test('Put new stay for the room with inexistent id should be NotFound', async () => {
+			isAuth.mockImplementation(isAuthOk);
+
+			const newStay = { startTime: now.toISOString() };
+
+			return agent
+				.put('/rooms/' + uuidv1() + '/stays')
+				.send(newStay)
+				.expect(404)
+				.then(res => {
+					expect(res.body).toEqual(expect.objectContaining({ error: 404 }));
+				});
+		});
+
+		test('Put new stay for the room without startTime should be MissingRequiredParameter', async () => {
+			isAuth.mockImplementation(isAuthOk);
+
+			const newStay = {};
+
+			return agent
+				.put('/rooms/' + roomId + '/stays')
+				.send(newStay)
+				.expect(400)
+				.then(res => {
+					expect(res.body).toEqual(expect.objectContaining({ error: 201, data: '/startTime' }));
+				});
+		});
+
+		test('Put new stay for the room with correct id should be ok', async () => {
+			isAuth.mockImplementation(isAuthOk);
+
+			const newStay = { startTime: now.toISOString() };
+
+			return agent
+				.put('/rooms/' + roomId + '/stays')
+				.send(newStay)
+				.expect(201)
+				.then(async res => {
+					const result = res.body;
+					expect(uuidValidate().test(result.id)).toBe(true);
+					expect(result.roomId).toEqual(roomId);
+					expect(result.startTime).toEqual(newStay.startTime);
+
+					// check db
+					const items = await Stay.scan().filter('sk').beginsWith('STAY#').exec();
+					expect(items.length).toEqual(1);
+					const saved = items.find(e => e.sk === 'STAY#' + result.id);
+					expect(saved.pk).toEqual('ROOM#' + roomId);
+					expect(saved.startTime.toISOString()).toEqual(newStay.startTime);
 				});
 		});
 	});
@@ -210,7 +371,7 @@ describe('Role: admin', () => {
 				});
 		});
 
-		test('Add new room with correct data should be Ok', async () => {
+		test('Add new room with correct data should be ok', async () => {
 			isAuth.mockImplementation(isAuthOk);
 
 			const newRoom = { floor: 2, number: '201', hotelId };
@@ -287,7 +448,7 @@ describe('Role: admin', () => {
 				});
 		});
 
-		test.todo('Update existing room with correct data should be Ok');
+		test.todo('Update existing room with correct data should be ok');
 	});
 
 	describe('DELETE /rooms/:id', () => {
@@ -324,7 +485,7 @@ describe('Role: admin', () => {
 				});
 		});
 
-		test('Delete existing room with correct id should be Ok', async () => {
+		test('Delete existing room with correct id should be ok', async () => {
 			isAuth.mockImplementation(isAuthOk);
 
 			return agent

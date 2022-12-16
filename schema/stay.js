@@ -14,5 +14,10 @@ module.exports = {
 		type: 'object',
 		allOf: [{ $ref: 'stay' }],
 		required: ['roomId', 'startTime']
+	},
+	putStay: {
+		type: 'object',
+		allOf: [{ $ref: 'stay' }],
+		required: ['startTime']
 	}
 };
