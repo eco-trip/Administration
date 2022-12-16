@@ -33,10 +33,6 @@
 						"release": "minor"
 					},
 					{
-						"type": "feat",
-						"release": "minor"
-					},
-					{
 						"type": "fix",
 						"release": "patch"
 					},
@@ -106,12 +102,6 @@
 						}
 					]
 				}
-			}
-		],
-		[
-			"@semantic-release/npm",
-			{
-				"npmPublish": false
 			}
 		],
 		"@semantic-release/github",

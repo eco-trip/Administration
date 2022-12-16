@@ -1,6 +1,5 @@
 {
 	"name": "administration",
-	"version": "1.0.0-staging.3",
 	"author": "Matteo Brocca, Alan Mancini, Alberto Marfoglia",
 	"description": "Ecotrip Administration Api",
 	"main": "index.js",
