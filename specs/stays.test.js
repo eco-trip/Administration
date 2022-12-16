@@ -3,7 +3,15 @@ const { v1: uuidv1 } = require('uuid');
 
 require('../db/connect');
 const { clear } = require('../test/clear');
-const { createHotel, createRoom, createStay, isAuthUnautorized, isAuthAdmin, uuidValidate } = require('../test/utils');
+const {
+	createHotel,
+	createRoom,
+	createStay,
+	isAuthUnautorized,
+	isAuthAdmin,
+	isAuthHotelier,
+	uuidValidate
+} = require('../test/utils');
 const { isAuth } = require('../middlewares/isAuth');
 
 const { Stay } = require('../model/Stay');
@@ -275,7 +283,7 @@ describe('Role: admin', () => {
 				});
 		});
 
-		test('Update existing room with only startTime data should be ok', async () => {
+		test('Update existing stay with only startTime data should be ok', async () => {
 			isAuth.mockImplementation(isAuthAdmin);
 
 			const editStay = { startTime: now.toISOString() };
@@ -300,7 +308,7 @@ describe('Role: admin', () => {
 				});
 		});
 
-		test('Update existing room with startTime and endTime should be ok', async () => {
+		test('Update existing stay with startTime and endTime should be ok', async () => {
 			isAuth.mockImplementation(isAuthAdmin);
 
 			const editStay = { startTime: now.toISOString(), endTime: now.toISOString() };
@@ -362,6 +370,163 @@ describe('Role: admin', () => {
 		});
 
 		test('Delete existing stay with correct id should be ok', async () => {
+			isAuth.mockImplementation(isAuthAdmin);
+
+			return agent
+				.delete('/stays/' + stayId)
+				.expect(200)
+				.then(async res => {
+					expect(res.body).toEqual('Successfully deleted!');
+
+					// check db
+					const items = await Stay.scan().filter('sk').beginsWith('STAY#').exec();
+					expect(items.length).toEqual(0);
+				});
+		});
+	});
+});
+
+/*
+Hotelier role
+*/
+
+describe('Role: hotelier', () => {
+	describe('GET /stays', () => {
+		test('Get all stays should be Forbidden', async () => {
+			isAuth.mockImplementation(isAuthHotelier(uuidv1()));
+
+			return agent
+				.get('/stays')
+				.expect(403)
+				.then(res => {
+					expect(res.body).toEqual(expect.objectContaining({ error: 403 }));
+				});
+		});
+	});
+
+	describe('GET /stays/:id', () => {
+		test("Get stay not of the hotelier's hotel should be Forbidden", async () => {
+			isAuth.mockImplementation(isAuthHotelier(uuidv1()));
+
+			return agent
+				.get('/stays/' + stayId)
+				.expect(403)
+				.then(res => {
+					expect(res.body).toEqual(expect.objectContaining({ error: 403 }));
+				});
+		});
+
+		test("Get stay of hotelier's own hotel room should be ok", async () => {
+			isAuth.mockImplementation(isAuthHotelier(hotelId));
+
+			return agent
+				.get('/stays/' + stayId)
+				.expect(200)
+				.then(res => {
+					const result = res.body;
+
+					expect(result.id).toEqual(stay.sk.replace('STAY#', ''));
+					expect(result.roomId).toEqual(room.sk.replace('ROOM#', ''));
+					expect(result.startTime).toEqual(now.toISOString());
+				});
+		});
+	});
+
+	describe('POST /stays', () => {
+		test("Add new stay not of the hotelier's hotel should be Forbidden", async () => {
+			isAuth.mockImplementation(isAuthHotelier(uuidv1()));
+
+			const newStay = { startTime: now.toISOString(), roomId };
+
+			return agent
+				.post('/stays/')
+				.send(newStay)
+				.expect(403)
+				.then(res => {
+					expect(res.body).toEqual(expect.objectContaining({ error: 403 }));
+				});
+		});
+
+		test("Add new stay of hotelier's own hotel room should be ok", async () => {
+			isAuth.mockImplementation(isAuthHotelier(hotelId));
+
+			const newStay = { startTime: now.toISOString(), roomId };
+
+			return agent
+				.post('/stays/')
+				.send(newStay)
+				.expect(201)
+				.then(async res => {
+					const result = res.body;
+					expect(uuidValidate().test(result.id)).toBe(true);
+					expect(result.roomId).toEqual(roomId);
+					expect(result.startTime).toEqual(newStay.startTime);
+
+					// check db
+					const items = await Stay.scan().filter('sk').beginsWith('STAY#').exec();
+					expect(items.length).toEqual(2);
+					const saved = items.find(e => e.sk === 'STAY#' + result.id);
+					expect(saved.pk).toEqual('ROOM#' + roomId);
+					expect(saved.startTime.toISOString()).toEqual(newStay.startTime);
+					expect(saved.endTime).toBeUndefined();
+				});
+		});
+	});
+
+	describe('PATCH /stays/:id', () => {
+		test("Update existing stay not of the hotelier's hotel should be Forbidden", async () => {
+			isAuth.mockImplementation(isAuthHotelier(uuidv1()));
+
+			const editStay = { startTime: now.toISOString() };
+
+			return agent
+				.patch('/stays/' + stayId)
+				.send(editStay)
+				.expect(403)
+				.then(res => {
+					expect(res.body).toEqual(expect.objectContaining({ error: 403 }));
+				});
+		});
+
+		test("Update existing stay in hotelier's own hotel should be ok", async () => {
+			isAuth.mockImplementation(isAuthHotelier(hotelId));
+
+			const editStay = { startTime: now.toISOString() };
+
+			return agent
+				.patch('/stays/' + stayId)
+				.send(editStay)
+				.expect(200)
+				.then(async res => {
+					const result = res.body;
+					expect(uuidValidate().test(result.id)).toBe(true);
+					expect(result.roomId).toEqual(roomId);
+					expect(result.startTime).toEqual(editStay.startTime);
+
+					// check db
+					const items = await Stay.scan().filter('sk').beginsWith('STAY#').exec();
+					expect(items.length).toEqual(1);
+					const saved = items.find(e => e.sk === 'STAY#' + result.id);
+					expect(saved.pk).toEqual('ROOM#' + roomId);
+					expect(saved.startTime.toISOString()).toEqual(editStay.startTime);
+					expect(saved.endTime).toBeUndefined();
+				});
+		});
+	});
+
+	describe('DELETE /stays/:id', () => {
+		test("Delete existing stay not of the hotelier's hotel should be Forbidden", async () => {
+			isAuth.mockImplementation(isAuthHotelier(uuidv1()));
+
+			return agent
+				.delete('/stays/' + stayId)
+				.expect(403)
+				.then(res => {
+					expect(res.body).toEqual(expect.objectContaining({ error: 403 }));
+				});
+		});
+
+		test("Delete existing stay in hotelier's own hotel should be ok", async () => {
 			isAuth.mockImplementation(isAuthAdmin);
 
 			return agent
