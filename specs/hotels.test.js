@@ -145,6 +145,17 @@ describe('Role: admin', () => {
 				});
 		});
 
+		test('Get rooms of the hotel with correct id should contain zero room', async () => {
+			isAuth.mockImplementation(isAuthAdmin);
+
+			return agent
+				.get('/hotels/' + hotelId + '/rooms')
+				.expect(200)
+				.then(res => {
+					expect(res.body.length).toBe(0);
+				});
+		});
+
 		test('Get rooms of the hotel with correct id should contain one room', async () => {
 			isAuth.mockImplementation(isAuthAdmin);
 

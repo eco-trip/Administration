@@ -50,8 +50,6 @@ exports.getStays = async (req, res, next) => {
 			.beginsWith('STAY#')
 			.exec();
 
-		if (!stays.count) return next(NotFound());
-
 		return next(SendData(stays.map(el => el.serialize('response'))));
 	} catch (error) {
 		return next(ServerError(error));

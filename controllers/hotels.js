@@ -38,6 +38,16 @@ exports.getRooms = async (req, res, next) => {
 		if (res.locals.grants.type !== 'any' && res.locals.user['custom:hotelId'] !== req.params.id)
 			return next(Forbidden());
 
+		const hotel = await Hotel.query('pk')
+			.eq('HOTEL#' + req.params.id)
+			.and()
+			.where('sk')
+			.beginsWith('METADATA#')
+			.limit(1)
+			.exec();
+
+		if (!hotel.count) return next(NotFound());
+
 		const rooms = await Room.query('pk')
 			.eq('HOTEL#' + req.params.id)
 			.and()
@@ -45,7 +55,6 @@ exports.getRooms = async (req, res, next) => {
 			.beginsWith('ROOM#')
 			.exec();
 
-		if (!rooms.count) return next(NotFound());
 		return next(SendData(rooms.map(el => el.serialize('response'))));
 	} catch (error) {
 		return next(ServerError(error));
