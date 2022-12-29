@@ -19,7 +19,8 @@ const schema = new dynamoose.Schema(
 		country: String,
 		city: String,
 		address: String,
-		zipcode: String
+		zipcode: String,
+		userId: String
 	},
 	{
 		timestamps: true

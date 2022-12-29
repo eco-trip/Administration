@@ -12,6 +12,7 @@ const {
 	uuidValidate
 } = require('../test/utils');
 const { isAuth } = require('../middlewares/isAuth');
+const { signUp, search } = require('../helpers/cognito');
 
 const { Hotel } = require('../model/Hotel');
 const { Room } = require('../model/Room');
@@ -295,6 +296,234 @@ describe('Role: admin', () => {
 					expect(saved.pk).toEqual('HOTEL#' + hotelId);
 					expect(saved.floor).toEqual(newRoom.floor);
 					expect(saved.number).toEqual(newRoom.number);
+				});
+		});
+	});
+
+	describe('GET /hotels/:id/user', () => {
+		test('Get user of the hotel without access token should be Unauthorized', async () => {
+			isAuth.mockImplementation(isAuthUnautorized);
+
+			return agent
+				.get('/hotels/' + hotelId + '/user')
+				.expect(401)
+				.then(res => {
+					expect(res.body).toEqual(expect.objectContaining({ error: 401 }));
+				});
+		});
+
+		test('Get user of the hotel with invalid id should be ValidationError', async () => {
+			isAuth.mockImplementation(isAuthAdmin);
+
+			return agent
+				.get('/hotels/123/user')
+				.expect(400)
+				.then(res => {
+					expect(res.body).toEqual(expect.objectContaining({ error: 200 }));
+				});
+		});
+
+		test('Get user of the hotel with inexistent id should be NotFound', async () => {
+			isAuth.mockImplementation(isAuthAdmin);
+
+			return agent
+				.get('/hotels/' + uuidv1() + '/user')
+				.expect(404)
+				.then(res => {
+					expect(res.body).toEqual(expect.objectContaining({ error: 404 }));
+				});
+		});
+
+		test('Get user of the hotel without users should be empty array ', async () => {
+			isAuth.mockImplementation(isAuthAdmin);
+			search.mockImplementation(() => Promise.resolve([]));
+
+			return agent
+				.get('/hotels/' + hotelId + '/user')
+				.expect(200)
+				.then(res => {
+					expect(res.body.length).toBe(0);
+				});
+		});
+		test('Get user of the hotel should contain one user ', async () => {
+			isAuth.mockImplementation(isAuthAdmin);
+			search.mockImplementation(() =>
+				Promise.resolve([
+					{
+						Attributes: [
+							{
+								Name: 'name',
+								Value: 'Pinco'
+							},
+							{
+								Name: 'family_name',
+								Value: 'Pallino'
+							},
+							{
+								Name: 'email',
+								Value: 'test@ecotrip.com'
+							}
+						],
+						Enabled: true,
+						UserCreateDate: '2022-12-29T14:22:31.618Z',
+						UserLastModifiedDate: '2022-12-29T14:22:31.618Z',
+						UserStatus: 'UNCONFIRMED',
+						Username: 'test@ecotrip.com'
+					}
+				])
+			);
+
+			return agent
+				.get('/hotels/' + hotelId + '/user')
+				.expect(200)
+				.then(res => {
+					expect(res.body.length).toBe(1);
+					expect(res.body[0].Username).toEqual('test@ecotrip.com');
+				});
+		});
+	});
+
+	describe('PUT /hotels/:id/user', () => {
+		test('Put new user for the hotel without access token should be Unauthorized', async () => {
+			isAuth.mockImplementation(isAuthUnautorized);
+
+			const newUser = { email: 'test@ecotrip.com', password: 'Testtest1!', name: 'Pinco', family_name: 'Pallino' };
+
+			return agent
+				.put('/hotels/' + hotelId + '/user')
+				.send(newUser)
+				.expect(401)
+				.then(res => {
+					expect(res.body).toEqual(expect.objectContaining({ error: 401 }));
+				});
+		});
+
+		test('Put new user for the hotel with invalid id should be ValidationError', async () => {
+			isAuth.mockImplementation(isAuthAdmin);
+
+			const newUser = { email: 'test@ecotrip.com', password: 'Testtest1!', name: 'Pinco', family_name: 'Pallino' };
+
+			return agent
+				.put('/hotels/123/user')
+				.send(newUser)
+				.expect(400)
+				.then(res => {
+					expect(res.body).toEqual(expect.objectContaining({ error: 200 }));
+				});
+		});
+
+		test('Put new user for the hotel with inexistent id should be NotFound', async () => {
+			isAuth.mockImplementation(isAuthAdmin);
+
+			const newUser = { email: 'test@ecotrip.com', password: 'Testtest1!', name: 'Pinco', family_name: 'Pallino' };
+
+			return agent
+				.put('/hotels/' + uuidv1() + '/user')
+				.send(newUser)
+				.expect(404)
+				.then(res => {
+					expect(res.body).toEqual(expect.objectContaining({ error: 404 }));
+				});
+		});
+
+		test('Put new user for the hotel without email be MissingRequiredParameter', async () => {
+			isAuth.mockImplementation(isAuthAdmin);
+
+			const newUser = { password: 'Testtest1!', name: 'Pinco', family_name: 'Pallino' };
+
+			return agent
+				.put('/hotels/' + hotelId + '/user')
+				.send(newUser)
+				.expect(400)
+				.then(res => {
+					expect(res.body).toEqual(expect.objectContaining({ error: 201, data: '/email' }));
+				});
+		});
+
+		test('Put new user for the hotel without name be MissingRequiredParameter', async () => {
+			isAuth.mockImplementation(isAuthAdmin);
+
+			const newUser = { email: 'test@ecotrip.com', password: 'Testtest1!', family_name: 'Pallino' };
+
+			return agent
+				.put('/hotels/' + hotelId + '/user')
+				.send(newUser)
+				.expect(400)
+				.then(res => {
+					expect(res.body).toEqual(expect.objectContaining({ error: 201, data: '/name' }));
+				});
+		});
+
+		test('Put new user for the hotel without family_name be MissingRequiredParameter', async () => {
+			isAuth.mockImplementation(isAuthAdmin);
+
+			const newUser = { email: 'test@ecotrip.com', password: 'Testtest1!', name: 'Pinco' };
+
+			return agent
+				.put('/hotels/' + hotelId + '/user')
+				.send(newUser)
+				.expect(400)
+				.then(res => {
+					expect(res.body).toEqual(expect.objectContaining({ error: 201, data: '/family_name' }));
+				});
+		});
+
+		test('Put new user for the hotel without password be MissingRequiredParameter', async () => {
+			isAuth.mockImplementation(isAuthAdmin);
+
+			const newUser = { email: 'test@ecotrip.com', name: 'Pinco', family_name: 'Pallino' };
+
+			return agent
+				.put('/hotels/' + hotelId + '/user')
+				.send(newUser)
+				.expect(400)
+				.then(res => {
+					expect(res.body).toEqual(expect.objectContaining({ error: 201, data: '/password' }));
+				});
+		});
+
+		test('Put new user for the hotel with invalid password be ValidationError', async () => {
+			isAuth.mockImplementation(isAuthAdmin);
+			signUp.mockImplementation(() => Promise.reject(new Error('InvalidPasswordException')));
+
+			const newUser = { email: 'test@ecotrip.com', password: 'invalidpassword', name: 'Pinco', family_name: 'Pallino' };
+
+			return agent
+				.put('/hotels/' + hotelId + '/user')
+				.send(newUser)
+				.expect(400)
+				.then(res => {
+					expect(res.body).toEqual(expect.objectContaining({ error: 211, data: '/password' }));
+				});
+		});
+
+		test('Put new user for the hotel with email that already exist be EmailAlreadyExists', async () => {
+			isAuth.mockImplementation(isAuthAdmin);
+			signUp.mockImplementation(() => Promise.reject(new Error('UsernameExistsException')));
+
+			const newUser = { email: 'test@ecotrip.com', password: 'Testtest1!', name: 'Pinco', family_name: 'Pallino' };
+
+			return agent
+				.put('/hotels/' + hotelId + '/user')
+				.send(newUser)
+				.expect(400)
+				.then(res => {
+					expect(res.body).toEqual(expect.objectContaining({ error: 304 }));
+				});
+		});
+
+		test('Put new user for the hotel should be ok', async () => {
+			isAuth.mockImplementation(isAuthAdmin);
+			signUp.mockImplementation(() => Promise.resolve({ user: { username: 'test@ecotrip.com' } }));
+
+			const newUser = { email: 'test@ecotrip.com', password: 'Testtest1!', name: 'Pinco', family_name: 'Pallino' };
+
+			return agent
+				.put('/hotels/' + hotelId + '/user')
+				.send(newUser)
+				.expect(200)
+				.then(res => {
+					expect(res.body.user).toEqual(expect.objectContaining({ username: 'test@ecotrip.com' }));
 				});
 		});
 	});
