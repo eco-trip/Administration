@@ -37,5 +37,9 @@ CognitoAppClientID=$(aws cognito-idp list-user-pool-clients --user-pool-id ${Cog
 echo "AWS_COGNITO_USER_POOL_ID=${CognitoUserPoolID}" >>.env.${ENV}
 echo "AWS_COGNITO_CLIENT_ID=${CognitoAppClientID}" >>.env.${ENV}
 
+SQS_URI=${Project}-${ENV}-guest-authorization
+SQS_URL=$(aws cloudformation describe-stacks --stack-name ${SQS_URI} --query "Stacks[0].Outputs[?OutputKey=='Queue'].OutputValue" --output text)
+echo "AWS_SQS_URL=${SQS_URL}" >>.env.${ENV}
+
 cp .env.${ENV} .env
 find ./ -maxdepth 1 -name '.env.*' -exec rm {} \;

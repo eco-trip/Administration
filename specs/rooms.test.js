@@ -20,6 +20,7 @@ const { Stay } = require('../model/Stay');
 const app = require('../app');
 
 jest.mock('../helpers/cognito');
+jest.mock('../helpers/sqs');
 jest.mock('../middlewares/isAuth');
 
 let agent;

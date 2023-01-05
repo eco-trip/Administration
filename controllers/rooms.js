@@ -1,5 +1,5 @@
 const { v1: uuidv1 } = require('uuid');
-
+const { sendMessage } = require('../helpers/sqs');
 const { SendData, NotFound, ServerError, Forbidden } = require('../helpers/response');
 const { Room } = require('../model/Room');
 const { Stay } = require('../model/Stay');
@@ -98,12 +98,15 @@ exports.putStay = async (req, res, next) => {
 
 		if (!room.count) return next(NotFound());
 
-		if (res.locals.grants.type !== 'any' && res.locals.user['custom:hotelId'] !== room[0].serialize('response').hotelId)
-			return next(Forbidden());
+		const { hotelId } = room[0].serialize('response');
+
+		if (res.locals.grants.type !== 'any' && res.locals.user['custom:hotelId'] !== hotelId) return next(Forbidden());
 
 		const id = uuidv1();
 		const { startTime } = req.body;
 		const stay = await Stay.create({ pk: 'ROOM#' + req.params.id, sk: 'STAY#' + id, startTime: new Date(startTime) });
+		await sendMessage(hotelId, req.params.id, id);
+
 		return next(SendData(stay.serialize('response'), 201));
 	} catch (error) {
 		return next(ServerError(error));
