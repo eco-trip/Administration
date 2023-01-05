@@ -740,6 +740,45 @@ describe('Role: admin', () => {
 				});
 		});
 
+		test('Update existing hotel with string cost filed should be ValidationError', async () => {
+			isAuth.mockImplementation(isAuthAdmin);
+
+			const editHotel = {
+				cost: 'one'
+			};
+
+			return agent
+				.patch('/hotels/' + hotelId)
+				.send(editHotel)
+				.expect(400)
+				.then(res => {
+					expect(res.body).toEqual(expect.objectContaining({ error: 200 }));
+				});
+		});
+
+		test('Update existing hotel with float cost should be Ok', async () => {
+			isAuth.mockImplementation(isAuthAdmin);
+
+			const editHotel = {
+				cost: 1.25
+			};
+
+			return agent
+				.patch('/hotels/' + hotelId)
+				.send(editHotel)
+				.expect(200)
+				.then(async res => {
+					const result = res.body;
+					expect(result.cost).toEqual(editHotel.cost);
+
+					// check db
+					const items = await Hotel.scan().filter('sk').beginsWith('METADATA#').exec();
+					expect(items.length).toEqual(1);
+					const saved = items.find(e => e.pk === 'HOTEL#' + hotelId);
+					expect(saved.cost).toEqual(editHotel.cost);
+				});
+		});
+
 		test('Update existing hotel with all allowed fields should be ok', async () => {
 			isAuth.mockImplementation(isAuthAdmin);
 
