@@ -6,7 +6,7 @@ module.exports = {
 			id: { $ref: 'uuid#/definitions/id' },
 			roomId: { $ref: 'uuid#/definitions/id' },
 			startTime: { type: 'string', format: 'date-time' },
-			endTime: { type: 'string' }
+			endTime: { type: 'string', format: 'date-time' }
 		},
 		additionalProperties: false
 	},

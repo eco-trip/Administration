@@ -56,6 +56,36 @@ exports.getStays = async (req, res, next) => {
 	}
 };
 
+exports.getCurrentStay = async (req, res, next) => {
+	try {
+		const room = await Room.query('sk')
+			.eq('ROOM#' + req.params.id)
+			.limit(1)
+			.exec();
+
+		if (!room.count) return next(NotFound());
+
+		if (res.locals.grants.type !== 'any' && res.locals.user['custom:hotelId'] !== room[0].serialize('response').hotelId)
+			return next(Forbidden());
+
+		const stay = await Stay.query('pk')
+			.eq('ROOM#' + req.params.id)
+			.and()
+			.where('sk')
+			.beginsWith('STAY#')
+			.filter('endTime')
+			.not()
+			.exists()
+			.exec();
+
+		if (!stay.count) return next(SendData(false));
+
+		return next(SendData(stay[0].serialize('response')));
+	} catch (error) {
+		return next(ServerError(error));
+	}
+};
+
 exports.putStay = async (req, res, next) => {
 	try {
 		const room = await Room.query('sk')

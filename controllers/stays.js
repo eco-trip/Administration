@@ -75,7 +75,10 @@ exports.update = async (req, res, next) => {
 		const { endTime, startTime } = req.body;
 		const edit = await Stay.update(
 			{ pk: stay[0].pk, sk: 'STAY#' + req.params.id },
-			{ startTime: startTime && new Date(startTime), endTime: endTime && new Date(endTime) }
+			{
+				startTime: startTime ? new Date(startTime) : stay[0].startTime,
+				endTime: endTime ? new Date(endTime) : stay[0].endTime
+			}
 		);
 		return next(SendData(edit.serialize('response')));
 	} catch (error) {

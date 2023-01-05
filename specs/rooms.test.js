@@ -209,6 +209,84 @@ describe('Role: admin', () => {
 		});
 	});
 
+	describe('GET /rooms/:id/currentStay', () => {
+		test('Get current stay of the room without access token should be Unauthorized', async () => {
+			isAuth.mockImplementation(isAuthUnautorized);
+
+			return agent
+				.get('/rooms/' + roomId + '/currentStay')
+				.expect(401)
+				.then(res => {
+					expect(res.body).toEqual(expect.objectContaining({ error: 401 }));
+				});
+		});
+
+		test('Get current stay of the room with invalid id should be ValidationError', async () => {
+			isAuth.mockImplementation(isAuthAdmin);
+
+			return agent
+				.get('/rooms/123/currentStay')
+				.expect(400)
+				.then(res => {
+					expect(res.body).toEqual(expect.objectContaining({ error: 200 }));
+				});
+		});
+
+		test('Get current stay of the room with inexistent id should be NotFound', async () => {
+			isAuth.mockImplementation(isAuthAdmin);
+
+			return agent
+				.get('/rooms/' + uuidv1() + '/currentStay')
+				.expect(404)
+				.then(res => {
+					expect(res.body).toEqual(expect.objectContaining({ error: 404 }));
+				});
+		});
+
+		test('Get current stay of the room with correct id should contain zero stay', async () => {
+			isAuth.mockImplementation(isAuthAdmin);
+
+			return agent
+				.get('/rooms/' + roomId + '/currentStay')
+				.expect(200)
+				.then(res => {
+					expect(res.body).toBe(false);
+				});
+		});
+
+		test('Get current stay of the room with correct id should be false if all stays have endTime', async () => {
+			isAuth.mockImplementation(isAuthAdmin);
+
+			const stayId = uuidv1();
+			await createStay(stayId, roomId, { startTime: now, endTime: now });
+
+			return agent
+				.get('/rooms/' + roomId + '/currentStay')
+				.expect(200)
+				.then(res => {
+					expect(res.body).toBe(false);
+				});
+		});
+
+		test('Get current stay of the room with correct id should contain one stay', async () => {
+			isAuth.mockImplementation(isAuthAdmin);
+
+			await createStay(uuidv1(), roomId, { startTime: now, endTime: now });
+			const stayId = uuidv1();
+			const stay = await createStay(stayId, roomId, { startTime: now });
+
+			return agent
+				.get('/rooms/' + roomId + '/currentStay')
+				.expect(200)
+				.then(res => {
+					const result = res.body;
+					expect(result.id).toEqual(stay.sk.replace('STAY#', ''));
+					expect(result.roomId).toEqual(stay.pk.replace('ROOM#', ''));
+					expect(result.startTime).toEqual(now.toISOString());
+				});
+		});
+	});
+
 	describe('PUT /rooms/:id/stays', () => {
 		test('Put new stay for the room without access token should be Unauthorized', async () => {
 			isAuth.mockImplementation(isAuthUnautorized);
@@ -667,6 +745,37 @@ describe('Role: hotelier', () => {
 					expect(res.body.length).toBe(1);
 
 					const result = res.body[0];
+					expect(result.id).toEqual(stay.sk.replace('STAY#', ''));
+					expect(result.roomId).toEqual(stay.pk.replace('ROOM#', ''));
+					expect(result.startTime).toEqual(now.toISOString());
+				});
+		});
+	});
+
+	describe('GET /rooms/:id/currentStay', () => {
+		test("Get current stay of the room not of the hotelier's hotel should be Forbidden", async () => {
+			isAuth.mockImplementation(isAuthHotelier(uuidv1()));
+
+			return agent
+				.get('/rooms/' + roomId + '/currentStay')
+				.expect(403)
+				.then(res => {
+					expect(res.body).toEqual(expect.objectContaining({ error: 403 }));
+				});
+		});
+
+		test('Get current stay of the room with correct id should contain one stay', async () => {
+			isAuth.mockImplementation(isAuthHotelier(hotelId));
+
+			await createStay(uuidv1(), roomId, { startTime: now, endTime: now });
+			const stayId = uuidv1();
+			const stay = await createStay(stayId, roomId, { startTime: now });
+
+			return agent
+				.get('/rooms/' + roomId + '/currentStay')
+				.expect(200)
+				.then(res => {
+					const result = res.body;
 					expect(result.id).toEqual(stay.sk.replace('STAY#', ''));
 					expect(result.roomId).toEqual(stay.pk.replace('ROOM#', ''));
 					expect(result.startTime).toEqual(now.toISOString());
