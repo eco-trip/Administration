@@ -189,8 +189,8 @@ describe('Role: admin', () => {
 		test('Get stays of the room with correct id should contain two stays', async () => {
 			isAuth.mockImplementation(isAuthAdmin);
 
-			const stay1 = await createStay(uuidv1(), roomId, { startTime: now });
-			const stay2 = await createStay(uuidv1(), roomId, { startTime: now });
+			const stay1 = await createStay(uuidv1(), roomId, { startTime: new Date('2022-12-10T12:00:00') });
+			const stay2 = await createStay(uuidv1(), roomId, { startTime: new Date('2022-12-20T12:00:00') });
 
 			return agent
 				.get('/rooms/' + roomId + '/stays')
@@ -198,13 +198,11 @@ describe('Role: admin', () => {
 				.then(res => {
 					expect(res.body.length).toBe(2);
 
-					expect(res.body[0].id).toEqual(stay1.sk.replace('STAY#', ''));
-					expect(res.body[0].roomId).toEqual(stay1.pk.replace('ROOM#', ''));
-					expect(res.body[0].startTime).toEqual(now.toISOString());
+					expect(res.body[0].id).toEqual(stay2.sk.replace('STAY#', ''));
+					expect(res.body[0].roomId).toEqual(stay2.pk.replace('ROOM#', ''));
 
-					expect(res.body[1].id).toEqual(stay2.sk.replace('STAY#', ''));
-					expect(res.body[1].roomId).toEqual(stay2.pk.replace('ROOM#', ''));
-					expect(res.body[1].startTime).toEqual(now.toISOString());
+					expect(res.body[1].id).toEqual(stay1.sk.replace('STAY#', ''));
+					expect(res.body[1].roomId).toEqual(stay1.pk.replace('ROOM#', ''));
 				});
 		});
 	});

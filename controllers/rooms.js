@@ -48,6 +48,9 @@ exports.getStays = async (req, res, next) => {
 			.and()
 			.where('sk')
 			.beginsWith('STAY#')
+			.and()
+			.where('startTime')
+			.sort('descending')
 			.exec();
 
 		return next(SendData(stays.map(el => el.serialize('response'))));
