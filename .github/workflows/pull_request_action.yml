@@ -21,3 +21,4 @@ jobs:
         with:
           token: ${{ secrets.MEBBOT }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
+          test-script: npm run test
