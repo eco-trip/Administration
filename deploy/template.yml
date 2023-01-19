@@ -219,8 +219,10 @@ Resources:
 
               - secretsmanager:GetSecretValue
 
-              - cognito-idp:DescribeUserPoolClient
+              - cognito-idp:SignUp
+              - cognito-idp:ListUsers
               - cognito-idp:DescribeUserPoolDomain
+              - cognito-idp:ListUserPoolClients
               - cognito-idp:ListUserPoolClients
 
               - ses:SendEmail
