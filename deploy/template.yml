@@ -168,7 +168,7 @@ Resources:
           #!/bin/bash
           yum -y update
           yum -y install cfn-bootstrap
-          curl -sL https://rpm.nodesource.com/setup_lts.x | bash -
+          curl -sL https://rpm.nodesource.com/setup_16.x | bash -
           yum install nodejs -y
           /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource ApiEC2 --region ${AWS::Region}
 
@@ -216,15 +216,22 @@ Resources:
               - dynamodb:Delete*
               - dynamodb:Update*
               - dynamodb:PutItem
+
               - secretsmanager:GetSecretValue
+
               - cognito-idp:DescribeUserPoolClient
               - cognito-idp:DescribeUserPoolDomain
               - cognito-idp:ListUserPoolClients
+
               - ses:SendEmail
               - ses:SendRawEmail
+
               - s3:PutObject
               - s3:Get*
               - s3:DeleteObject
+
+              - sqs:SendMessage
+
               - autoscaling:Describe*
               - sts:AssumeRole
               - logs:Create*
