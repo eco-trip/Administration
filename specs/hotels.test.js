@@ -614,7 +614,8 @@ describe('Role: admin', () => {
 			const newHotel = {
 				name: 'Edit Hotel',
 				description: 'description',
-				cost: 10,
+				electricityCost: 10,
+				hotWaterCost: 10,
 				country: 'IT',
 				city: 'Fano',
 				address: 'Via Roma 1',
@@ -630,7 +631,8 @@ describe('Role: admin', () => {
 					expect(uuidValidate().test(result.id)).toBe(true);
 					expect(result.name).toEqual(newHotel.name);
 					expect(result.description).toEqual(newHotel.description);
-					expect(result.cost).toEqual(newHotel.cost);
+					expect(result.electricityCost).toEqual(newHotel.electricityCost);
+					expect(result.hotWaterCost).toEqual(newHotel.hotWaterCost);
 					expect(result.country).toEqual(newHotel.country);
 					expect(result.city).toEqual(newHotel.city);
 					expect(result.address).toEqual(newHotel.address);
@@ -643,7 +645,8 @@ describe('Role: admin', () => {
 					expect(saved.sk).toEqual('METADATA#' + result.id);
 					expect(saved.name).toEqual(newHotel.name);
 					expect(saved.description).toEqual(newHotel.description);
-					expect(saved.cost).toEqual(newHotel.cost);
+					expect(saved.electricityCost).toEqual(newHotel.electricityCost);
+					expect(saved.hotWaterCost).toEqual(newHotel.hotWaterCost);
 					expect(saved.country).toEqual(newHotel.country);
 					expect(saved.city).toEqual(newHotel.city);
 					expect(saved.address).toEqual(newHotel.address);
@@ -743,13 +746,25 @@ describe('Role: admin', () => {
 		test('Update existing hotel with string cost filed should be ValidationError', async () => {
 			isAuth.mockImplementation(isAuthAdmin);
 
-			const editHotel = {
-				cost: 'one'
+			const editHotel1 = {
+				electricityCost: 'one'
+			};
+
+			await agent
+				.patch('/hotels/' + hotelId)
+				.send(editHotel1)
+				.expect(400)
+				.then(res => {
+					expect(res.body).toEqual(expect.objectContaining({ error: 200 }));
+				});
+
+			const editHotel2 = {
+				hotWaterCost: 'one'
 			};
 
 			return agent
 				.patch('/hotels/' + hotelId)
-				.send(editHotel)
+				.send(editHotel2)
 				.expect(400)
 				.then(res => {
 					expect(res.body).toEqual(expect.objectContaining({ error: 200 }));
@@ -759,23 +774,42 @@ describe('Role: admin', () => {
 		test('Update existing hotel with float cost should be Ok', async () => {
 			isAuth.mockImplementation(isAuthAdmin);
 
-			const editHotel = {
-				cost: 1.25
+			const editHotel1 = {
+				electricityCost: 1.25
 			};
 
-			return agent
+			await agent
 				.patch('/hotels/' + hotelId)
-				.send(editHotel)
+				.send(editHotel1)
 				.expect(200)
 				.then(async res => {
 					const result = res.body;
-					expect(result.cost).toEqual(editHotel.cost);
+					expect(result.electricityCost).toEqual(editHotel1.electricityCost);
 
 					// check db
 					const items = await Hotel.scan().filter('sk').beginsWith('METADATA#').exec();
 					expect(items.length).toEqual(1);
 					const saved = items.find(e => e.pk === 'HOTEL#' + hotelId);
-					expect(saved.cost).toEqual(editHotel.cost);
+					expect(saved.electricityCost).toEqual(editHotel1.electricityCost);
+				});
+
+			const editHotel2 = {
+				hotWaterCost: 1.25
+			};
+
+			return agent
+				.patch('/hotels/' + hotelId)
+				.send(editHotel2)
+				.expect(200)
+				.then(async res => {
+					const result = res.body;
+					expect(result.hotWaterCost).toEqual(editHotel2.hotWaterCost);
+
+					// check db
+					const items = await Hotel.scan().filter('sk').beginsWith('METADATA#').exec();
+					expect(items.length).toEqual(1);
+					const saved = items.find(e => e.pk === 'HOTEL#' + hotelId);
+					expect(saved.hotWaterCost).toEqual(editHotel2.hotWaterCost);
 				});
 		});
 
@@ -785,7 +819,8 @@ describe('Role: admin', () => {
 			const editHotel = {
 				name: 'Edit Hotel',
 				description: 'description',
-				cost: 10,
+				electricityCost: 10,
+				hotWaterCost: 10,
 				country: 'IT',
 				city: 'Fano',
 				address: 'Via Roma 1',
@@ -801,7 +836,8 @@ describe('Role: admin', () => {
 					expect(uuidValidate().test(result.id)).toBe(true);
 					expect(result.name).toEqual(editHotel.name);
 					expect(result.description).toEqual(editHotel.description);
-					expect(result.cost).toEqual(editHotel.cost);
+					expect(result.electricityCost).toEqual(editHotel.electricityCost);
+					expect(result.hotWaterCost).toEqual(editHotel.hotWaterCost);
 					expect(result.country).toEqual(editHotel.country);
 					expect(result.city).toEqual(editHotel.city);
 					expect(result.address).toEqual(editHotel.address);
@@ -813,7 +849,8 @@ describe('Role: admin', () => {
 					const saved = items.find(e => e.pk === 'HOTEL#' + hotelId);
 					expect(saved.name).toEqual(editHotel.name);
 					expect(saved.description).toEqual(editHotel.description);
-					expect(saved.cost).toEqual(editHotel.cost);
+					expect(saved.electricityCost).toEqual(editHotel.electricityCost);
+					expect(saved.hotWaterCost).toEqual(editHotel.hotWaterCost);
 					expect(saved.country).toEqual(editHotel.country);
 					expect(saved.city).toEqual(editHotel.city);
 					expect(saved.address).toEqual(editHotel.address);
