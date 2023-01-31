@@ -105,7 +105,7 @@ exports.putStay = async (req, res, next) => {
 		const id = uuidv1();
 		const { startTime } = req.body;
 		const stay = await Stay.create({ pk: 'ROOM#' + req.params.id, sk: 'STAY#' + id, startTime: new Date(startTime) });
-		await sendMessage(hotelId, req.params.id, id);
+		await sendMessage('checkin', hotelId, req.params.id, id);
 
 		return next(SendData(stay.serialize('response'), 201));
 	} catch (error) {

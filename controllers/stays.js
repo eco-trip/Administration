@@ -51,7 +51,7 @@ exports.add = async (req, res, next) => {
 		const id = uuidv1();
 		const { roomId, startTime } = req.body;
 		const item = await Stay.create({ pk: 'ROOM#' + roomId, sk: 'STAY#' + id, startTime: new Date(startTime) });
-		await sendMessage(hotelId, req.body.roomId, id);
+		await sendMessage('checkin', hotelId, req.body.roomId, id);
 		return next(SendData(item.serialize('response'), 201));
 	} catch (error) {
 		return next(ServerError(error));
@@ -71,7 +71,9 @@ exports.update = async (req, res, next) => {
 
 		if (!room.count) return next(NotFound());
 
-		if (res.locals.grants.type !== 'any' && res.locals.user['custom:hotelId'] !== room[0].serialize('response').hotelId)
+		const roomData = room[0].serialize('response');
+
+		if (res.locals.grants.type !== 'any' && res.locals.user['custom:hotelId'] !== roomData.hotelId)
 			return next(Forbidden());
 
 		const { endTime, startTime } = req.body;
@@ -82,6 +84,8 @@ exports.update = async (req, res, next) => {
 				endTime: endTime ? new Date(endTime) : stay[0].endTime
 			}
 		);
+
+		if (endTime) await sendMessage('checkout', roomData.hotelId, roomData.id, req.params.id);
 		return next(SendData(edit.serialize('response')));
 	} catch (error) {
 		return next(ServerError(error));

@@ -20,10 +20,14 @@ if (ENV !== 'test') {
 	}
 }
 
-module.exports.sendMessage = async (hotelId, roomId, stayId) => {
+module.exports.sendMessage = async (type, hotelId, roomId, stayId) => {
 	try {
 		const command = new SendMessageCommand({
 			MessageAttributes: {
+				type: {
+					DataType: 'String',
+					StringValue: type
+				},
 				hotelId: {
 					DataType: 'String',
 					StringValue: hotelId
@@ -38,7 +42,7 @@ module.exports.sendMessage = async (hotelId, roomId, stayId) => {
 				}
 			},
 			MessageBody: 'Stay ' + stayId,
-			MessageDeduplicationId: stayId,
+			MessageDeduplicationId: type + ':' + stayId,
 			MessageGroupId: 'Stays',
 			QueueUrl: AWS_SQS_URL
 		});
