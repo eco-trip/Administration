@@ -1,0 +1,19 @@
+version: 0.0
+os: linux
+files:
+  - source: .
+    destination: /home/ec2-user/app
+    file_exists_behavior: OVERWRITE
+hooks:
+  BeforeInstall:
+    - location: codedeploy/install.sh
+      timeout: 300
+      runas: root
+  AfterInstall:
+    - location: codedeploy/setup.sh
+      timeout: 600
+      runas: root
+  ApplicationStart:
+    - location: codedeploy/start.sh
+      timout: 300
+      runas: root

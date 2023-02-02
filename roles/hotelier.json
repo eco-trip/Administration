@@ -1,0 +1,18 @@
+{
+	"hotels": {
+		"read:own": ["*"],
+		"update:own": ["*"]
+	},
+	"rooms": {
+		"create:own": ["*"],
+		"read:own": ["*"],
+		"update:own": ["*"],
+		"delete:own": ["*"]
+	},
+	"stays": {
+		"create:own": ["*"],
+		"read:own": ["*"],
+		"update:own": ["*"],
+		"delete:own": ["*"]
+	}
+}

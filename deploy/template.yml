@@ -1,0 +1,466 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+
+Parameters:
+  URI:
+    Type: String
+    Description: The URI used to name resources [projectName-env-gitUsername]
+  Url:
+    Type: String
+    Description: The enpoint to connect with the api distribution
+  AcmArn:
+    Type: String
+    Description: The ARN of the ssl certificate genereted on ACM
+  HostedZoneId:
+    Description: Hosted zone Id on route 53
+    Type: String
+  Env:
+    Type: String
+    Default: dev
+    Description: Enter the environment
+    AllowedValues:
+      - dev
+      - production
+      - staging
+
+Mappings:
+  Environments:
+    dev:
+      InstanceType: t2.micro
+      VpcCIDRBlock: 10.0.0.0/16
+      PublicSubnetCIDR: 10.0.0.0/24
+    staging:
+      InstanceType: t2.micro
+      VpcCIDRBlock: 10.1.0.0/16
+      PublicSubnetCIDR: 10.1.0.0/24
+    production:
+      InstanceType: t2.micro
+      VpcCIDRBlock: 10.2.0.0/16
+      PublicSubnetCIDR: 10.2.0.0/24
+  RegionMap:
+    us-east-1:
+      HVM64: ami-0ed9277fb7eb570c9
+    us-east-2:
+      HVM64: ami-002068ed284fb165b
+    us-west-1:
+      HVM64: ami-03af6a70ccd8cb578
+    us-west-2:
+      HVM64: ami-00f7e5c52c0f43726
+    ca-central-1:
+      HVM64: ami-0bae7412735610274
+    eu-central-1:
+      HVM64: ami-05d34d340fb1d89e5
+    eu-south-1:
+      HVM64: ami-08d64ae428dd09b2a
+    eu-west-1:
+      HVM64: ami-04dd4500af104442f
+    eu-west-2:
+      HVM64: ami-0d37e07bd4ff37148
+
+Resources:
+  ApiEC2:
+    Type: 'AWS::EC2::Instance'
+    DependsOn:
+      - LogsAPI
+    Metadata:
+      'AWS::CloudFormation::Init':
+        config:
+          packages:
+            yum:
+              ruby: []
+              awslogs: []
+              git: []
+              jq: []
+          files:
+            /home/ec2-user/install:
+              source: !Sub 'https://aws-codedeploy-${AWS::Region}.s3.amazonaws.com/latest/install'
+              mode: '000755'
+            /home/ec2-user/env:
+              content: !Ref Env
+            /home/ec2-user/PublicRouteTableId:
+              content: !Ref PublicRouteTable
+            /etc/awslogs/awscli.conf:
+              content: !Sub |-
+                [plugins]
+                cwlogs = cwlogs
+                [default]
+                region = ${AWS::Region}
+            /etc/awslogs/awslogs.conf:
+              content: !Sub |-
+                [general]
+                state_file = /var/awslogs/state/agent-state
+                use_gzip_http_content_encoding = true
+                queue_size = 10
+
+                [logger]
+                file = /home/ec2-user/app/app.out.log
+                log_group_name = ${URI}-ec2-logs
+                initial_position = start_of_file
+                datetime_format = %Y-%m-%d %H:%M:%S
+                log_stream_name = logs
+                buffer_duration = 5000
+
+                [errors]
+                file = /home/ec2-user/app/app.err.log
+                log_group_name = ${URI}-ec2-logs
+                initial_position = start_of_file
+                datetime_format = %Y-%m-%d %H:%M:%S
+                log_stream_name = errors
+                buffer_duration = 5000
+
+                [system]
+                file = /var/log/messages
+                log_group_name = ${URI}-ec2-logs
+                initial_position = start_of_file
+                datetime_format = %Y-%m-%d %H:%M:%S
+                log_stream_name = system
+                buffer_duration = 5000
+
+                [deployment]
+                file = /opt/codedeploy-agent/deployment-root/deployment-logs/codedeploy-agent-deployments.log 
+                log_group_name = ${URI}-ec2-logs
+                initial_position = start_of_file
+                datetime_format = %Y-%m-%d %H:%M:%S
+                log_stream_name = deployment
+                buffer_duration = 5000
+            /etc/nginx/conf.d/api.conf:
+              content: !Sub |-
+                server {
+                    listen 80;
+                    server_name ${Url};
+                    
+                    location / {
+                        proxy_pass http://127.0.0.1:3000;
+                        proxy_set_header Host $host;
+                        proxy_set_header X-Real-IP $remote_addr;
+                        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                        proxy_set_header X-Forwarded-Proto $scheme;
+                    }
+                }
+          commands:
+            00-install-agent:
+              command: ./install auto
+              cwd: /home/ec2-user/
+            01-cfn-signal:
+              command: !Sub '/opt/aws/bin/cfn-signal -e 0 --stack ${AWS::StackName} --resource ApiEC2 --region ${AWS::Region}'
+            02-start-cloudwatch-agent:
+              command: mkdir /var/awslogs && mkdir /var/awslogs/state && sudo systemctl start awslogsd
+            03-set-agent-as-service:
+              command: sudo systemctl enable awslogsd.service
+            04-install-nginx:
+              command: yes y | sudo amazon-linux-extras install nginx1 && sudo systemctl start nginx
+    CreationPolicy:
+      ResourceSignal:
+        Count: '1'
+        Timeout: PT5M
+    Properties:
+      IamInstanceProfile: !Ref InstanceRoleInstanceProfile
+      InstanceType: !FindInMap
+        - Environments
+        - !Ref Env
+        - InstanceType
+      ImageId: !FindInMap
+        - RegionMap
+        - !Ref 'AWS::Region'
+        - HVM64
+      UserData: !Base64
+        'Fn::Sub': |-
+          #!/bin/bash
+          yum -y update
+          yum -y install cfn-bootstrap
+          curl -sL https://rpm.nodesource.com/setup_16.x | bash -
+          yum install nodejs -y
+          /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource ApiEC2 --region ${AWS::Region}
+
+      KeyName: !Sub '${URI}-keys'
+      Tags:
+        - Key: DeploymentTag
+          Value: !Sub '${URI}'
+      SecurityGroupIds:
+        - !Ref ApiSecurityGroup
+
+  # ROLE AND POLICIES
+  InstanceRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+              AWS:
+                - !Ref 'AWS::AccountId'
+            Action:
+              - 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy'
+        - 'arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore'
+      Path: /
+  InstanceRolePolicies:
+    Type: 'AWS::IAM::Policy'
+    Properties:
+      PolicyName: !Sub '${URI}-InstanceRolePolicy'
+      PolicyDocument:
+        Statement:
+          - Effect: Allow
+            Action:
+              - dynamodb:BatchGet*
+              - dynamodb:DescribeStream
+              - dynamodb:DescribeTable
+              - dynamodb:Get*
+              - dynamodb:Query
+              - dynamodb:Scan
+              - dynamodb:BatchWrite*
+              - dynamodb:CreateTable
+              - dynamodb:Delete*
+              - dynamodb:Update*
+              - dynamodb:PutItem
+
+              - secretsmanager:GetSecretValue
+
+              - cognito-idp:SignUp
+              - cognito-idp:ListUsers
+              - cognito-idp:DescribeUserPoolDomain
+              - cognito-idp:ListUserPoolClients
+              - cognito-idp:ListUserPoolClients
+
+              - ses:SendEmail
+              - ses:SendRawEmail
+
+              - s3:PutObject
+              - s3:Get*
+              - s3:DeleteObject
+
+              - sqs:SendMessage
+
+              - autoscaling:Describe*
+              - sts:AssumeRole
+              - logs:Create*
+              - logs:PutLogEvents
+              - cloudformation:GetTemplate
+              - cloudformation:Describe*
+              - ec2:AcceptVpcPeeringConnection
+              - ec2:CreateRoute
+              - ec2:DescribeVpcPeeringConnections
+            Resource: '*'
+      Roles:
+        - !Ref InstanceRole
+  InstanceRoleInstanceProfile:
+    Type: 'AWS::IAM::InstanceProfile'
+    Properties:
+      Path: /
+      Roles:
+        - !Ref InstanceRole
+
+  # LOGS
+  LogsAPI:
+    Type: 'AWS::Logs::LogGroup'
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Retain
+    Properties:
+      LogGroupName: !Sub '${URI}-ec2-logs'
+      RetentionInDays: 14
+
+  # CODE DEPLOY
+  CodedeployApplicationApi:
+    Type: 'AWS::CodeDeploy::Application'
+    Properties:
+      ApplicationName: !Sub '${URI}-codedeploy-application'
+      ComputePlatform: Server
+  CodeDeployTrustRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Sid: '1'
+            Effect: Allow
+            Principal:
+              Service:
+                - codedeploy.amazonaws.com
+            Action: 'sts:AssumeRole'
+      Path: /
+  CodedeployGroup:
+    Type: 'AWS::CodeDeploy::DeploymentGroup'
+    Properties:
+      ApplicationName: !Sub '${URI}-codedeploy-application'
+      DeploymentGroupName: !Sub '${URI}-deployment-group'
+      ServiceRoleArn: !GetAtt
+        - CodeDeployTrustRole
+        - Arn
+      Ec2TagFilters:
+        - Key: DeploymentTag
+          Value: !Sub '${URI}'
+          Type: KEY_AND_VALUE
+      Deployment:
+        Revision:
+          RevisionType: S3
+          S3Location:
+            BundleType: zip
+            Bucket: !Sub '${URI}'
+            Key: api
+    DependsOn:
+      - CodedeployApplicationApi
+      - ApiEC2
+  CodeDeployRolePolicies:
+    Type: 'AWS::IAM::Policy'
+    Properties:
+      PolicyName: !Sub '${URI}-CodeDeployPolicy'
+      PolicyDocument:
+        Statement:
+          - Effect: Allow
+            Resource:
+              - '*'
+            Action:
+              - 'ec2:Describe*'
+          - Effect: Allow
+            Resource:
+              - '*'
+            Action:
+              - 'autoscaling:CompleteLifecycleAction'
+              - 'autoscaling:DeleteLifecycleHook'
+              - 'autoscaling:DescribeLifecycleHooks'
+              - 'autoscaling:DescribeAutoScalingGroups'
+              - 'autoscaling:PutLifecycleHook'
+              - 'autoscaling:RecordLifecycleActionHeartbeat'
+      Roles:
+        - !Ref CodeDeployTrustRole
+
+  # VPC AND ROUTE TABLES
+  ApiSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupName: !Sub '${URI}-security-group'
+      GroupDescription: Allow HTTPS access from
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '443'
+          ToPort: '443'
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: '80'
+          ToPort: '80'
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: '22'
+          ToPort: '22'
+          CidrIp: 0.0.0.0/0
+  VPC:
+    Type: 'AWS::EC2::VPC'
+    Properties:
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      CidrBlock: !FindInMap
+        - Environments
+        - !Ref Env
+        - VpcCIDRBlock
+      Tags:
+        - Key: Name
+          Value: !Sub '${URI}-VPC'
+  PublicSubnet:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      AvailabilityZone: !Select
+        - 0
+        - !GetAZs
+          Ref: 'AWS::Region'
+      VpcId: !Ref VPC
+      CidrBlock: !FindInMap
+        - Environments
+        - !Ref Env
+        - PublicSubnetCIDR
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub '${URI}-public-subnet'
+  InternetGateway:
+    Type: 'AWS::EC2::InternetGateway'
+  GatewayAttachment:
+    Type: 'AWS::EC2::VPCGatewayAttachment'
+    Properties:
+      InternetGatewayId: !Ref InternetGateway
+      VpcId: !Ref VPC
+  PublicRouteTable:
+    Type: 'AWS::EC2::RouteTable'
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub '${URI}-public-route-table'
+      VpcId: !Ref VPC
+  PublicRoute:
+    Type: 'AWS::EC2::Route'
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+    DependsOn:
+      - GatewayAttachment
+  PublicSubnetRouteTableAssociation:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref PublicSubnet
+
+  # DISTRIBUTION
+  ApiCachePolicy:
+    Type: 'AWS::CloudFront::CachePolicy'
+    Properties:
+      CachePolicyConfig:
+        DefaultTTL: 0
+        MaxTTL: 1
+        MinTTL: 0
+        Name: !Sub '${URI}-cache-policy'
+        ParametersInCacheKeyAndForwardedToOrigin:
+          CookiesConfig:
+            CookieBehavior: all
+          EnableAcceptEncodingGzip: 'false'
+          HeadersConfig:
+            HeaderBehavior: none
+          QueryStringsConfig:
+            QueryStringBehavior: none
+  ApiDistribution:
+    Type: 'AWS::CloudFront::Distribution'
+    Properties:
+      DistributionConfig:
+        HttpVersion: http2
+        Enabled: 'true'
+        Origins:
+          - DomainName: !GetAtt
+              - ApiEC2
+              - PublicDnsName
+            Id: !Ref ApiEC2
+            CustomOriginConfig:
+              HTTPPort: 80
+              OriginProtocolPolicy: http-only
+        Aliases:
+          - !Ref Url
+        ViewerCertificate:
+          AcmCertificateArn: !Ref AcmArn
+          SslSupportMethod: sni-only
+          MinimumProtocolVersion: TLSv1.2_2021
+        DefaultCacheBehavior:
+          AllowedMethods:
+            - DELETE
+            - GET
+            - HEAD
+            - OPTIONS
+            - PATCH
+            - POST
+            - PUT
+          TargetOriginId: !Ref ApiEC2
+          CachePolicyId: !Ref ApiCachePolicy
+          ViewerProtocolPolicy: allow-all
+          Compress: true
+  RecordSetGroup:
+    Type: 'AWS::Route53::RecordSetGroup'
+    Properties:
+      HostedZoneId: !Ref HostedZoneId
+      RecordSets:
+        - AliasTarget:
+            DNSName: !GetAtt
+              - ApiDistribution
+              - DomainName
+            EvaluateTargetHealth: 'false'
+            HostedZoneId: Z2FDTNDATAQYW2
+          Name: !Ref Url
+          Type: A
